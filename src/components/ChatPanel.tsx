@@ -27,12 +27,9 @@ const ChatPanel = ({ isOpen, onClose, onCommand }: ChatPanelProps) => {
   const handleSend = () => {
     if (!input.trim()) return;
     const cmd = input.trim();
-    setMessages(prev => [...prev, { role: 'user', content: cmd }]);
+    setMessages(prev => [...prev, { role: 'user', content: cmd }, { role: 'assistant', content: '✨ Applying your changes — regenerating with AI…' }]);
     setInput('');
     onCommand(cmd);
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: 'assistant', content: `✓ Applied: "${cmd}". Your preview has been updated.` }]);
-    }, 800);
   };
 
   return (
