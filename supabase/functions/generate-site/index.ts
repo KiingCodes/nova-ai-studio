@@ -1,35 +1,44 @@
-// Generates a complete single-file HTML website from a natural-language prompt
-// using Lovable AI Gateway (no API key required from the user).
+// Streams a complete HTML5 website from a prompt using Lovable AI Gateway + Vercel AI SDK.
+import { streamText } from "npm:ai@6.0.177";
+import { createOpenAICompatible } from "npm:@ai-sdk/openai-compatible@2.0.47";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Expose-Headers": "x-stream-id",
 };
 
-const SYSTEM_PROMPT = `You are an elite web designer and front-end engineer. Generate a COMPLETE, production-ready, single-file HTML5 website based on the user's prompt.
+const SYSTEM_PROMPT = `You are an elite web designer and front-end engineer at a $200/hr agency.
 
-REQUIREMENTS:
-- Output ONLY raw HTML. No markdown fences, no commentary, no explanations.
-- Single self-contained file: <!DOCTYPE html> ... </html>.
-- Use Tailwind via CDN: <script src="https://cdn.tailwindcss.com"></script>
-- Load Google Fonts (Inter + a tasteful display font like Playfair Display, Space Grotesk, or DM Serif Display depending on the brand vibe).
-- Use real, brand-appropriate copy (no Lorem Ipsum). Invent a brand name based on the prompt.
-- Use high-quality Unsplash images via https://images.unsplash.com/photo-... (real photo IDs) OR use elegant SVG illustrations and gradients. Always include alt text.
-- Beautiful, modern, agency-quality design. Generous spacing, refined typography, subtle gradients, soft shadows, glassmorphism where appropriate.
-- LIGHT THEME by default unless the prompt specifies dark.
-- Fully responsive (mobile-first). Use Tailwind responsive utilities.
-- Sections to include (when relevant): sticky nav, hero with strong CTA, features/benefits grid, social proof / testimonials, pricing or services, FAQ, footer.
-- Smooth scroll, hover transitions, subtle entrance animations using CSS keyframes.
+Generate a COMPLETE, production-ready, single-file HTML5 website based on the user's prompt.
+
+OUTPUT RULES (STRICT):
+- Output ONLY raw HTML. No markdown fences, no commentary, no preamble, no postamble.
+- Start your response with "<!DOCTYPE html>" and end with "</html>".
+- Single self-contained file.
+
+TECH:
+- Tailwind via CDN: <script src="https://cdn.tailwindcss.com"></script>
+- Google Fonts: Inter + a tasteful display font (Playfair Display, Space Grotesk, DM Serif Display) chosen to match the brand vibe.
+- Lucide icons via CDN if needed: <script src="https://unpkg.com/lucide@latest"></script> then lucide.createIcons().
+- Real Unsplash photos via https://images.unsplash.com/photo-... OR refined SVG/gradients. Always alt text.
+
+DESIGN:
+- LIGHT theme by default unless prompt says otherwise.
+- Agency-quality: bold typography, generous whitespace, soft shadows, subtle gradients, glassmorphism where it fits.
+- Real brand-appropriate copy. Invent a brand name from the prompt. NO Lorem Ipsum.
+- Sections (when relevant): sticky nav with smooth-scroll links, hero w/ strong CTA, features grid, social proof / testimonials, pricing or services, FAQ, footer.
+- Subtle CSS keyframe animations on entrance + hover transitions.
+- Fully responsive mobile-first.
 - Semantic HTML, accessible, SEO meta tags (title, description), favicon emoji.
-- Working anchor navigation between sections.
 
-Make it look like a $20k agency project. Be bold and opinionated with the design.`;
+Make it look like a $20k project. Be bold.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { prompt } = await req.json();
+    const { prompt, previousHtml } = await req.json();
     if (!prompt || typeof prompt !== "string") {
       return new Response(JSON.stringify({ error: "Missing prompt" }), {
         status: 400,
@@ -45,59 +54,33 @@ Deno.serve(async (req) => {
       });
     }
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
+    const gateway = createOpenAICompatible({
+      name: "lovable",
+      baseURL: "https://ai.gateway.lovable.dev/v1",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
+        "Lovable-API-Key": apiKey,
+        "X-Lovable-AIG-SDK": "vercel-ai-sdk",
       },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: prompt },
-        ],
-      }),
     });
 
-    if (aiRes.status === 429) {
-      return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
-        status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (aiRes.status === 402) {
-      return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits in workspace settings." }), {
-        status: 402,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (!aiRes.ok) {
-      const txt = await aiRes.text();
-      console.error("AI gateway error:", aiRes.status, txt);
-      return new Response(JSON.stringify({ error: "AI generation failed" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const userMessage = previousHtml
+      ? `Modify the existing website according to this instruction: "${prompt}".
 
-    const data = await aiRes.json();
-    let html: string = data?.choices?.[0]?.message?.content ?? "";
+Return the FULL updated HTML file (no partial diffs). Preserve the brand identity, tone, and overall structure — only change what's requested. Improve quality where appropriate.
 
-    // Strip markdown fences if model added them
-    html = html.trim();
-    if (html.startsWith("```")) {
-      html = html.replace(/^```(?:html)?\s*/i, "").replace(/```\s*$/i, "").trim();
-    }
-    // If model wrapped in extra text, extract <!DOCTYPE...> block
-    const docIdx = html.search(/<!DOCTYPE/i);
-    if (docIdx > 0) html = html.slice(docIdx);
+EXISTING HTML:
+${previousHtml}`
+      : prompt;
 
-    return new Response(JSON.stringify({ html }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const result = streamText({
+      model: gateway("google/gemini-2.5-pro"),
+      system: SYSTEM_PROMPT,
+      prompt: userMessage,
     });
+
+    return result.toTextStreamResponse({ headers: corsHeaders });
   } catch (err) {
-    console.error(err);
+    console.error("generate-site error:", err);
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
