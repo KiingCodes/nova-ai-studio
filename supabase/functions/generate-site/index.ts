@@ -12,16 +12,18 @@ const SYSTEM_PROMPT = `You are an elite web designer and front-end engineer at a
 
 Generate a COMPLETE, production-ready, single-file HTML5 website based on the user's prompt.
 
-OUTPUT RULES (STRICT):
+OUTPUT RULES (STRICT — VIOLATION = FAILURE):
 - Output ONLY raw HTML. No markdown fences, no commentary, no preamble, no postamble.
 - Start your response with "<!DOCTYPE html>" and end with "</html>".
-- Single self-contained file.
+- The document MUST be fully closed: </body></html>. Never stop mid-tag.
+- Single self-contained file. Keep total size under ~45KB.
 
 TECH:
 - Tailwind via CDN: <script src="https://cdn.tailwindcss.com"></script>
 - Google Fonts: Inter + a tasteful display font (Playfair Display, Space Grotesk, DM Serif Display) chosen to match the brand vibe.
 - Lucide icons via CDN if needed: <script src="https://unpkg.com/lucide@latest"></script> then lucide.createIcons().
 - Real Unsplash photos via https://images.unsplash.com/photo-... OR refined SVG/gradients. Always alt text.
+- All <script> blocks MUST be syntactically valid. Wrap any DOM access in DOMContentLoaded. Never throw at parse time.
 
 DESIGN:
 - LIGHT theme by default unless prompt says otherwise.
@@ -29,10 +31,9 @@ DESIGN:
 - Real brand-appropriate copy. Invent a brand name from the prompt. NO Lorem Ipsum.
 - Sections (when relevant): sticky nav with smooth-scroll links, hero w/ strong CTA, features grid, social proof / testimonials, pricing or services, FAQ, footer.
 - Subtle CSS keyframe animations on entrance + hover transitions.
-- Fully responsive mobile-first.
-- Semantic HTML, accessible, SEO meta tags (title, description), favicon emoji.
+- Fully responsive mobile-first. Semantic HTML, accessible, SEO meta tags (title, description), favicon emoji.
 
-Make it look like a $20k project. Be bold.`;
+Be concise but bold. Ship something that looks like a $20k project.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -66,7 +67,7 @@ Deno.serve(async (req) => {
     const userMessage = previousHtml
       ? `Modify the existing website according to this instruction: "${prompt}".
 
-Return the FULL updated HTML file (no partial diffs). Preserve the brand identity, tone, and overall structure — only change what's requested. Improve quality where appropriate.
+Return the FULL updated HTML file (no partial diffs). Preserve the brand identity, tone, and overall structure — only change what's requested. The document MUST end with </body></html>.
 
 EXISTING HTML:
 ${previousHtml}`
@@ -76,6 +77,8 @@ ${previousHtml}`
       model: gateway("google/gemini-2.5-pro"),
       system: SYSTEM_PROMPT,
       prompt: userMessage,
+      maxOutputTokens: 16000,
+      temperature: 0.7,
     });
 
     return result.toTextStreamResponse({ headers: corsHeaders });
