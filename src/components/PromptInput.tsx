@@ -43,15 +43,6 @@ const PromptInput = ({ onGenerate, isGenerating }: PromptInputProps) => {
           transition={{ delay: 0.05, duration: 0.5 }}
           className="h-14 md:h-20 mx-auto mb-6 object-contain drop-shadow-sm"
         />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.15 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/15 border border-primary/30 text-foreground text-xs font-semibold mb-5"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-primary" />
-          Powered by Lovable AI
-        </motion.div>
         <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-foreground mb-3 leading-[1.1]">
           Describe it. <span className="text-gradient-gold">We build it.</span>
         </h1>
