@@ -1,6 +1,6 @@
-import { useRef, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Monitor, Smartphone, Tablet, RefreshCw, ExternalLink, Maximize2, Minimize2, Code2, Eye, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { useRef, useEffect, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Monitor, Smartphone, Tablet, RefreshCw, ExternalLink, Maximize2, Minimize2, Code2, Eye, AlertTriangle, CheckCircle2, X, Bug } from 'lucide-react';
 import type { HtmlValidationResult } from '@/lib/htmlValidator';
 
 interface PreviewPanelProps {
@@ -13,11 +13,48 @@ interface PreviewPanelProps {
 type Viewport = 'desktop' | 'tablet' | 'mobile';
 type Tab = 'preview' | 'code';
 
+interface RuntimeError {
+  id: number;
+  type: 'error' | 'warn' | 'unhandled';
+  message: string;
+  source?: string;
+  line?: number;
+  ts: number;
+}
+
 const viewportWidths: Record<Viewport, string> = {
   desktop: '100%',
   tablet: '768px',
   mobile: '375px',
 };
+
+// Script injected into the iframe to forward runtime errors to the parent.
+const ERROR_BRIDGE = `<script>
+(function(){
+  var post = function(p){ try { parent.postMessage({ __preview: true, ...p }, '*'); } catch(e){} };
+  window.addEventListener('error', function(e){
+    post({ type:'error', message: e.message || String(e.error||'Error'), source: e.filename, line: e.lineno });
+  }, true);
+  window.addEventListener('unhandledrejection', function(e){
+    var r = e.reason || {}; post({ type:'unhandled', message: (r.message||String(r)) });
+  });
+  var origErr = console.error;
+  console.error = function(){ try { post({ type:'error', message: Array.from(arguments).map(String).join(' ') }); } catch(_){} origErr.apply(console, arguments); };
+  var origWarn = console.warn;
+  console.warn = function(){ try { post({ type:'warn', message: Array.from(arguments).map(String).join(' ') }); } catch(_){} origWarn.apply(console, arguments); };
+})();
+<\/script>`;
+
+// Inject the bridge as the first child of <head>, or fall back to prepending.
+function injectBridge(html: string): string {
+  if (!html) return html;
+  const headOpen = html.match(/<head[^>]*>/i);
+  if (headOpen && headOpen.index !== undefined) {
+    const at = headOpen.index + headOpen[0].length;
+    return html.slice(0, at) + ERROR_BRIDGE + html.slice(at);
+  }
+  return ERROR_BRIDGE + html;
+}
 
 const PreviewPanel = ({ html, isGenerating, streaming, validation }: PreviewPanelProps) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -25,43 +62,80 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation }: PreviewPane
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [tab, setTab] = useState<Tab>('preview');
+  const [errors, setErrors] = useState<RuntimeError[]>([]);
+  const [errorsCollapsed, setErrorsCollapsed] = useState(false);
   const lastWriteRef = useRef(0);
+  const errIdRef = useRef(0);
 
-  // Auto-switch to code view while streaming so users see the build happening
+  // Listen for runtime errors from the sandbox iframe.
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      const d = e.data;
+      if (!d || typeof d !== 'object' || !d.__preview) return;
+      const msg = String(d.message || '').slice(0, 400);
+      // Filter known noisy messages from CDN libs we can ignore
+      if (/cdn\.tailwindcss\.com.*production/i.test(msg)) return;
+      setErrors(prev => [
+        ...prev.slice(-19),
+        { id: ++errIdRef.current, type: d.type, message: msg, source: d.source, line: d.line, ts: Date.now() },
+      ]);
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  // Reset errors whenever a new generation starts (not on every streaming delta).
+  const generationKey = `${html.length === 0}-${isGenerating}`;
+  useEffect(() => {
+    if (isGenerating) setErrors([]);
+  }, [generationKey, isGenerating]);
+
+  // Auto-switch tabs based on streaming state
   useEffect(() => {
     if (streaming) setTab('code');
     else if (html && !streaming) setTab('preview');
   }, [streaming]);
 
-  // Write HTML into iframe — throttle while streaming for performance
+  // Render HTML into the sandboxed iframe — throttled while streaming.
   useEffect(() => {
     if (!iframeRef.current || !html) return;
     const now = Date.now();
-    if (streaming && now - lastWriteRef.current < 350) return;
+    if (streaming && now - lastWriteRef.current < 400) return;
     lastWriteRef.current = now;
 
-    const doc = iframeRef.current.contentDocument;
-    if (doc) {
-      try {
-        doc.open();
-        doc.write(html);
-        doc.close();
-      } catch {}
-    }
+    const injected = injectBridge(html);
+    // Use srcdoc — required when sandbox lacks allow-same-origin (document.write would fail)
+    iframeRef.current.srcdoc = injected;
   }, [html, streaming]);
 
-  // Auto-scroll code view
   useEffect(() => {
     if (tab === 'code' && codeRef.current) {
       codeRef.current.scrollTop = codeRef.current.scrollHeight;
     }
   }, [html, tab]);
 
+  const reload = useCallback(() => {
+    if (!iframeRef.current || !html) return;
+    setErrors([]);
+    iframeRef.current.srcdoc = injectBridge(html);
+  }, [html]);
+
+  const openExternal = useCallback(() => {
+    if (!html) return;
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }, [html]);
+
   const viewportButtons: { key: Viewport; icon: typeof Monitor; label: string }[] = [
     { key: 'desktop', icon: Monitor, label: 'Desktop' },
     { key: 'tablet', icon: Tablet, label: 'Tablet' },
     { key: 'mobile', icon: Smartphone, label: 'Mobile' },
   ];
+
+  const errorCount = errors.filter(e => e.type !== 'warn').length;
+  const warnCount = errors.length - errorCount;
 
   return (
     <div className={`flex-1 flex flex-col min-w-0 ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}>
@@ -107,7 +181,7 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation }: PreviewPane
 
         <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-secondary/50 text-muted-foreground text-[11px] font-mono">
           <div className={`w-1.5 h-1.5 rounded-full ${streaming ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
-          {streaming ? 'streaming…' : 'localhost:3000'}
+          {streaming ? 'streaming…' : 'sandboxed'}
         </div>
 
         <div className="flex items-center gap-1">
@@ -121,21 +195,13 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation }: PreviewPane
               }`}
             >
               {validation.errors.length > 0 ? <AlertTriangle className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
-              {validation.stats.sizeKb}kb · {validation.stats.tagCount} tags
+              {validation.score}/100 · {validation.stats.sizeKb}kb
             </div>
           )}
-          <button
-            onClick={() => {
-              if (iframeRef.current && html) {
-                const doc = iframeRef.current.contentDocument;
-                if (doc) { doc.open(); doc.write(html); doc.close(); }
-              }
-            }}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
-          >
+          <button onClick={reload} title="Reload preview" className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all">
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
-          <button className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all">
+          <button onClick={openExternal} title="Open in new tab" className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all">
             <ExternalLink className="w-3.5 h-3.5" />
           </button>
           <button
@@ -169,7 +235,10 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation }: PreviewPane
                   ref={iframeRef}
                   className="w-full h-full border-0"
                   title="Preview"
-                  sandbox="allow-scripts"
+                  // Hardened sandbox: no same-origin, no top-nav, no popups-to-escape, no forms
+                  sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
                 />
               </div>
             </div>
@@ -188,6 +257,56 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation }: PreviewPane
             <p className="text-muted-foreground text-sm">Enter a prompt to generate your project</p>
           </div>
         )}
+
+        {/* Runtime error overlay */}
+        <AnimatePresence>
+          {errors.length > 0 && tab === 'preview' && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              className="absolute bottom-3 left-3 right-3 md:left-auto md:right-3 md:w-[420px] z-20 rounded-xl border border-rose-500/30 bg-card/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+            >
+              <button
+                onClick={() => setErrorsCollapsed(c => !c)}
+                className="w-full flex items-center gap-2 px-3 py-2 border-b border-border/50 bg-rose-500/5 text-left"
+              >
+                <Bug className="w-3.5 h-3.5 text-rose-600" />
+                <span className="text-xs font-semibold text-foreground flex-1">
+                  {errorCount > 0 && <span className="text-rose-600">{errorCount} error{errorCount === 1 ? '' : 's'}</span>}
+                  {errorCount > 0 && warnCount > 0 && <span className="text-muted-foreground"> · </span>}
+                  {warnCount > 0 && <span className="text-amber-600">{warnCount} warning{warnCount === 1 ? '' : 's'}</span>}
+                </span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setErrors([]); }}
+                  className="p-0.5 rounded text-muted-foreground hover:text-foreground"
+                  aria-label="Dismiss"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </button>
+              {!errorsCollapsed && (
+                <div className="max-h-48 overflow-auto divide-y divide-border/40">
+                  {errors.slice().reverse().map((e) => (
+                    <div key={e.id} className="px-3 py-2 text-[11px] font-mono">
+                      <div className="flex items-start gap-2">
+                        <span className={`mt-0.5 inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${e.type === 'warn' ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-foreground/90 break-words">{e.message}</p>
+                          {(e.source || e.line) && (
+                            <p className="text-muted-foreground/70 text-[10px] mt-0.5 truncate">
+                              {e.source ? e.source.split('/').pop() : ''}{e.line ? `:${e.line}` : ''}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
