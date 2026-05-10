@@ -113,16 +113,22 @@ export function validateHtml(html: string): HtmlValidationResult {
   const dupes = ids.filter((id, i) => ids.indexOf(id) !== i);
   if (dupes.length > 0) warnings.push(`Duplicate id(s): ${[...new Set(dupes)].slice(0, 3).join(', ')}`);
 
-  // ---- Performance / security ----
+  // ---- Performance budgets (enforced) ----
+  const BUDGET = { sizeKb: 80, hardSizeKb: 150, scripts: 8, externalScripts: 6, images: 30 };
+  const sizeKb = Math.round((new Blob([trimmed]).size / 1024) * 10) / 10;
+  if (sizeKb > BUDGET.hardSizeKb) errors.push(`Page size ${sizeKb}KB exceeds hard budget ${BUDGET.hardSizeKb}KB.`);
+  else if (sizeKb > BUDGET.sizeKb) warnings.push(`Page size ${sizeKb}KB exceeds budget ${BUDGET.sizeKb}KB.`);
+
   if (/\bhttp:\/\//i.test(trimmed)) warnings.push('Insecure http:// resource(s) — prefer https://.');
-  if (/<script\b[^>]*>[^<]{2000,}/i.test(trimmed)) warnings.push('Very large inline script — consider splitting.');
+  if (/<script\b[^>]*>[^<]{4000,}/i.test(trimmed)) warnings.push('Very large inline script — consider splitting.');
   const externalScripts = [...trimmed.matchAll(/<script\b[^>]*\bsrc=/gi)];
-  if (externalScripts.length > 8) warnings.push(`${externalScripts.length} external scripts — may slow load.`);
+  if (externalScripts.length > BUDGET.externalScripts) warnings.push(`${externalScripts.length} external scripts exceed budget ${BUDGET.externalScripts}.`);
 
   // ---- Stats ----
   const scriptCount = (trimmed.match(/<script\b/gi) || []).length;
   const linkCount = (trimmed.match(/<a\b/gi) || []).length;
-  const sizeKb = Math.round((new Blob([trimmed]).size / 1024) * 10) / 10;
+  if (scriptCount > BUDGET.scripts) warnings.push(`${scriptCount} <script> tags exceed budget ${BUDGET.scripts}.`);
+  if (imgs.length > BUDGET.images) warnings.push(`${imgs.length} images exceed budget ${BUDGET.images}.`);
 
   // Score
   let score = 100 - errors.length * 20 - warnings.length * 3;

@@ -235,8 +235,8 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation }: PreviewPane
                   ref={iframeRef}
                   className="w-full h-full border-0"
                   title="Preview"
-                  // Hardened sandbox: no same-origin, no top-nav, no popups-to-escape, no forms
-                  sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+                  // Hardened sandbox: scripts allowed (needed for Tailwind CDN, Lucide), forms+modals for interactive demos. No same-origin = no parent access.
+                  sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms allow-modals"
                   referrerPolicy="no-referrer"
                   loading="lazy"
                 />
