@@ -14,7 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      project_versions: {
+        Row: {
+          created_at: string
+          html: string
+          id: string
+          label: string
+          project_id: string
+          prompt: string
+          user_id: string
+          validation: Json | null
+        }
+        Insert: {
+          created_at?: string
+          html: string
+          id?: string
+          label: string
+          project_id: string
+          prompt: string
+          user_id: string
+          validation?: Json | null
+        }
+        Update: {
+          created_at?: string
+          html?: string
+          id?: string
+          label?: string
+          project_id?: string
+          prompt?: string
+          user_id?: string
+          validation?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_versions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          active_version_id: string | null
+          created_at: string
+          id: string
+          initial_prompt: string
+          last_opened_at: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_version_id?: string | null
+          created_at?: string
+          id?: string
+          initial_prompt: string
+          last_opened_at?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_version_id?: string | null
+          created_at?: string
+          id?: string
+          initial_prompt?: string
+          last_opened_at?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

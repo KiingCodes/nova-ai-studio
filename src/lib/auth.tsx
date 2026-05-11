@@ -1,0 +1,36 @@
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import type { Session, User } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
+
+interface AuthCtx {
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  signOut: () => Promise<void>;
+}
+
+const Ctx = createContext<AuthCtx>({ user: null, session: null, loading: true, signOut: async () => {} });
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // CRITICAL: subscribe BEFORE getSession
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_evt, s) => {
+      setSession(s);
+      setLoading(false);
+    });
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      setSession(s);
+      setLoading(false);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signOut = async () => { await supabase.auth.signOut(); };
+
+  return <Ctx.Provider value={{ user: session?.user ?? null, session, loading, signOut }}>{children}</Ctx.Provider>;
+};
+
+export const useAuth = () => useContext(Ctx);

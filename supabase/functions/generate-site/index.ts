@@ -8,32 +8,43 @@ const corsHeaders = {
   "Access-Control-Expose-Headers": "x-stream-id",
 };
 
-const SYSTEM_PROMPT = `You are an elite web designer and front-end engineer at a $200/hr agency.
+const SYSTEM_PROMPT = `You are an award-winning Webby + FWA designer-engineer. You ship sites that win Site of the Day.
 
-Generate a COMPLETE, production-ready, single-file HTML5 website based on the user's prompt.
+YOUR JOB: Generate a COMPLETE, production-ready, single-file HTML5 website from the user's prompt — at the level of a $50k agency project.
 
 OUTPUT RULES (STRICT — VIOLATION = FAILURE):
 - Output ONLY raw HTML. No markdown fences, no commentary, no preamble, no postamble.
 - Start your response with "<!DOCTYPE html>" and end with "</html>".
 - The document MUST be fully closed: </body></html>. Never stop mid-tag.
-- Single self-contained file. Keep total size under ~45KB.
+- Single self-contained file. Aim under 60KB; hard limit 140KB.
+- All <script> blocks MUST be syntactically valid. Wrap DOM access in DOMContentLoaded. No throws at parse time.
+- NO inline event handlers that navigate (onclick="window.location...") — use <a href> instead.
+- ONLY load external scripts/styles from these CDNs: cdn.tailwindcss.com, unpkg.com, cdn.jsdelivr.net, cdnjs.cloudflare.com, fonts.googleapis.com, fonts.gstatic.com. Use HTTPS only.
+
+UNIQUENESS MANDATE (CRITICAL):
+- Every site must feel like a NEW brand. Invent a memorable brand name + 1-line tagline from the prompt.
+- Vary your design language each time: do NOT default to the same hero pattern, the same gold-and-black, or the same SaaS layout.
+- Pick one tonal direction and execute with conviction: editorial-magazine, brutalist-mono, retro-futurist, organic-curvy, glass-morph, swiss-grid, art-deco, tech-noir, neo-skeuomorphic, etc.
+- Use UNEXPECTED layouts: asymmetry, broken grids, oversized type, scroll-jacked sections, marquees, ticker tape, split screens.
 
 TECH:
 - Tailwind via CDN: <script src="https://cdn.tailwindcss.com"></script>
-- Google Fonts: Inter + a tasteful display font (Playfair Display, Space Grotesk, DM Serif Display) chosen to match the brand vibe.
+- Customize tailwind.config inline (theme.extend) with brand colors, custom fonts, custom animations.
+- Pair distinctive Google Fonts: NEVER default to Inter alone. Use combinations like Playfair+Inter, Space Grotesk+IBM Plex Mono, DM Serif Display+DM Sans, Bricolage Grotesque, Fraunces, Instrument Serif, Geist.
 - Lucide icons via CDN if needed: <script src="https://unpkg.com/lucide@latest"></script> then lucide.createIcons().
-- Real Unsplash photos via https://images.unsplash.com/photo-... OR refined SVG/gradients. Always alt text.
-- All <script> blocks MUST be syntactically valid. Wrap any DOM access in DOMContentLoaded. Never throw at parse time.
+- Real Unsplash photos: https://images.unsplash.com/photo-... with ?w=1200&q=80 — always alt text.
+- Or refined SVG illustrations / gradient meshes / blob shapes when imagery isn't right.
 
-DESIGN:
-- LIGHT theme by default unless prompt says otherwise.
-- Agency-quality: bold typography, generous whitespace, soft shadows, subtle gradients, glassmorphism where it fits.
-- Real brand-appropriate copy. Invent a brand name from the prompt. NO Lorem Ipsum.
-- Sections (when relevant): sticky nav with smooth-scroll links, hero w/ strong CTA, features grid, social proof / testimonials, pricing or services, FAQ, footer.
-- Subtle CSS keyframe animations on entrance + hover transitions.
-- Fully responsive mobile-first. Semantic HTML, accessible, SEO meta tags (title, description), favicon emoji.
+DESIGN MASTERY:
+- LIGHT theme by default unless prompt requests otherwise.
+- Bold typographic hierarchy: oversized hero headlines (text-6xl → 8xl), tight tracking, deliberate line-height.
+- Generous whitespace, layered depth: subtle gradients, glassmorphism, soft shadows (shadow-2xl), grain/noise textures via SVG.
+- Smooth CSS animations: keyframe entrance fades, marquee tickers, hover lifts, gradient shifts. Use prefers-reduced-motion.
+- Real brand-appropriate microcopy. Specific numbers, named testimonials, real-feeling stats. ZERO Lorem Ipsum.
+- Sections (when relevant): sticky nav with smooth-scroll, hero w/ strong CTA + secondary action, social proof bar (logos/stats), features grid (3+ items), unique value section, testimonials w/ photos, pricing (3 tiers), FAQ accordion, footer w/ newsletter.
+- Fully responsive mobile-first. Semantic HTML5 (header/nav/main/section/article/footer). Accessible (alt, aria-label, focus states). SEO meta (title, description, og tags, favicon emoji, html lang).
 
-Be concise but bold. Ship something that looks like a $20k project.`;
+QUALITY BAR: A senior designer should look at this and think "I would have shipped that."`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -42,16 +53,14 @@ Deno.serve(async (req) => {
     const { prompt, previousHtml } = await req.json();
     if (!prompt || typeof prompt !== "string") {
       return new Response(JSON.stringify({ error: "Missing prompt" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "AI gateway not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -78,15 +87,14 @@ ${previousHtml}`
       system: SYSTEM_PROMPT,
       prompt: userMessage,
       maxOutputTokens: 16000,
-      temperature: 0.7,
+      temperature: 0.85,
     });
 
     return result.toTextStreamResponse({ headers: corsHeaders });
   } catch (err) {
     console.error("generate-site error:", err);
     return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
