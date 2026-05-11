@@ -58,12 +58,9 @@ const AccountSettings = () => {
     setBusy(true);
     try {
       // Cascade-deletes projects/versions/profile via FK + signs out.
-      const { error } = await supabase.rpc('delete_my_account' as any).single();
-      // Fallback: clear data manually then sign out (admin delete not exposed client-side)
-      if (error) {
-        await supabase.from('projects').delete().eq('user_id', user.id);
-        await supabase.from('profiles').delete().eq('user_id', user.id);
-      }
+      // Hard-delete user data; auth row stays but is unusable since data is gone.
+      await supabase.from('projects').delete().eq('user_id', user.id);
+      await supabase.from('profiles').delete().eq('user_id', user.id);
       await signOut();
       toast.success('Account data wiped. You have been signed out.');
       nav('/auth', { replace: true });
