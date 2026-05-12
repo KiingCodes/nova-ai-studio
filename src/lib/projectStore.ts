@@ -71,8 +71,9 @@ export const projectStore = {
     const { data: proj, error: e1 } = await supabase.from('projects')
       .insert({ user_id: user.id, name: opts.name, initial_prompt: opts.prompt }).select().single();
     if (e1) throw e1;
+    const finalHtml = injectBackend(opts.html, proj.id);
     const { data: ver, error: e2 } = await supabase.from('project_versions').insert({
-      project_id: proj.id, user_id: user.id, label: 'v1', prompt: opts.prompt, html: opts.html,
+      project_id: proj.id, user_id: user.id, label: 'v1', prompt: opts.prompt, html: finalHtml,
       validation: opts.validation as any,
     }).select().single();
     if (e2) throw e2;
