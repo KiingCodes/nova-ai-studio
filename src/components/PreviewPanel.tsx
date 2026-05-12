@@ -297,6 +297,18 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation }: PreviewPane
                   {warnCount > 0 && <span className="text-amber-600">{warnCount} warning{warnCount === 1 ? '' : 's'}</span>}
                 </span>
                 <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const txt = errors.map(x => `[${x.type}] ${x.message}${x.source ? ` (${x.source}${x.line ? ':' + x.line : ''})` : ''}`).join('\n');
+                    navigator.clipboard?.writeText(txt);
+                  }}
+                  className="p-0.5 rounded text-muted-foreground hover:text-foreground"
+                  aria-label="Copy errors"
+                  title="Copy all errors"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+                <button
                   onClick={(e) => { e.stopPropagation(); setErrors([]); }}
                   className="p-0.5 rounded text-muted-foreground hover:text-foreground"
                   aria-label="Dismiss"
