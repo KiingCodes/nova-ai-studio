@@ -1,7 +1,8 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Monitor, Smartphone, Tablet, RefreshCw, ExternalLink, Maximize2, Minimize2, Code2, Eye, AlertTriangle, CheckCircle2, X, Bug } from 'lucide-react';
+import { Monitor, Smartphone, Tablet, RefreshCw, ExternalLink, Maximize2, Minimize2, Code2, Eye, AlertTriangle, CheckCircle2, X, Bug, Copy, Gauge } from 'lucide-react';
 import type { HtmlValidationResult } from '@/lib/htmlValidator';
+import ScoreBreakdown from './ScoreBreakdown';
 
 interface PreviewPanelProps {
   html: string;
