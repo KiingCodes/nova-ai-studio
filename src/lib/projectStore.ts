@@ -1,6 +1,7 @@
 // Cloud-backed project store (Supabase). Replaces former localStorage version.
 import { supabase } from '@/integrations/supabase/client';
 import { type HtmlValidationResult } from './htmlValidator';
+import { injectBackend } from './backendInject';
 
 export interface ProjectVersion {
   id: string;
