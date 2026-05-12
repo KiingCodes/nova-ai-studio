@@ -93,7 +93,7 @@ const Index = () => {
     } catch (e: any) { toast.error(e?.message || 'Edit failed'); }
   }, [project, activeVersion, generate, refreshProjects]);
 
-  const handleDownload = () => {
+  const handleDownloadHtml = () => {
     if (!activeVersion || !project) return;
     const blob = new Blob([activeVersion.html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
@@ -102,6 +102,12 @@ const Index = () => {
     a.download = `${project.name.toLowerCase()}-${activeVersion.label.replace(/\s.*/, '')}.html`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadZip = async () => {
+    if (!activeVersion || !project) return;
+    try { await exportProjectZip(project, activeVersion); toast.success('ZIP downloaded'); }
+    catch (e: any) { toast.error(e?.message || 'Export failed'); }
   };
 
   const handleNewProject = () => {
