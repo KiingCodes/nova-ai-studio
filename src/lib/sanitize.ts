@@ -13,7 +13,7 @@ const DANGEROUS_INLINE = [
   /document\.cookie/gi,
   /localStorage\b/gi,
   /sessionStorage\b/gi,
-  /\bfetch\s*\(\s*['"`]https?:\/\/(?!images\.unsplash\.com|fonts\.)/gi,
+  /\bfetch\s*\(\s*['"`]https?:\/\/(?!images\.unsplash\.com|fonts\.|.*\.functions\.supabase\.co|.*\.supabase\.co)/gi,
   /XMLHttpRequest/gi,
   /eval\s*\(/gi,
 ];
