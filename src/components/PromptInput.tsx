@@ -38,16 +38,16 @@ const PromptInput = ({ onGenerate, isGenerating }: PromptInputProps) => {
         <motion.img
           src={logo}
           alt="kinging.dev"
-          initial={{ opacity: 0, y: -10, scale: 0.95 }}
+          initial={{ opacity: 0, y: -20, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ delay: 0.05, duration: 0.5 }}
-          className="h-14 md:h-20 mx-auto mb-6 object-contain drop-shadow-sm"
+          transition={{ delay: 0.05, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          className="w-[min(70vw,420px)] h-auto mx-auto mb-6 object-contain drop-shadow-[0_10px_40px_rgba(212,175,55,0.35)]"
         />
-        <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-foreground mb-3 leading-[1.1]">
+        <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-foreground mb-3 leading-[1.1]">
           Describe it. <span className="text-gradient-gold">We build it.</span>
         </h1>
-        <p className="text-muted-foreground text-base md:text-lg max-w-lg mx-auto">
-          Generate production-ready websites and apps from a single prompt.
+        <p className="text-muted-foreground text-sm md:text-base max-w-lg mx-auto">
+          Generate production-ready, full-stack websites and apps from a single prompt.
         </p>
       </div>
 
