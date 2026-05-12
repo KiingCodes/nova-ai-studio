@@ -65,6 +65,7 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation }: PreviewPane
   const [tab, setTab] = useState<Tab>('preview');
   const [errors, setErrors] = useState<RuntimeError[]>([]);
   const [errorsCollapsed, setErrorsCollapsed] = useState(false);
+  const [scoreOpen, setScoreOpen] = useState(false);
   const lastWriteRef = useRef(0);
   const errIdRef = useRef(0);
 
