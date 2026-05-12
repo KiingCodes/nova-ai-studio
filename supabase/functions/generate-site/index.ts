@@ -21,6 +21,12 @@ OUTPUT RULES (STRICT — VIOLATION = FAILURE):
 - NO inline event handlers that navigate (onclick="window.location...") — use <a href> instead.
 - ONLY load external scripts/styles from these CDNs: cdn.tailwindcss.com, unpkg.com, cdn.jsdelivr.net, cdnjs.cloudflare.com, fonts.googleapis.com, fonts.gstatic.com. Use HTTPS only.
 
+FULL-STACK BACKEND (REQUIRED FOR ANY FORM):
+- The hosting platform provides a managed backend at: \`window.__KINGING_BACKEND__\` (set in the page) — POST to that URL with JSON \`{ projectId, formName, data: { ... } }\`.
+- The page MUST embed: \`<script>window.__KINGING_BACKEND__='__BACKEND_URL__';window.__KINGING_PROJECT_ID__='__PROJECT_ID__';</script>\` near top of <head>. Use these template strings VERBATIM — the host substitutes them.
+- Wire ALL <form> elements (contact, newsletter, waitlist, booking) to fetch() POST to \`window.__KINGING_BACKEND__\` with project + form data, show a "Thanks — we got it!" success state, and prevent default submit.
+- Always include a contact or newsletter form if relevant. Submissions persist server-side automatically — owner sees them in dashboard.
+
 UNIQUENESS MANDATE (CRITICAL):
 - Every site must feel like a NEW brand. Invent a memorable brand name + 1-line tagline from the prompt.
 - Vary your design language each time: do NOT default to the same hero pattern, the same gold-and-black, or the same SaaS layout.

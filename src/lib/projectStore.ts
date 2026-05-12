@@ -1,6 +1,7 @@
 // Cloud-backed project store (Supabase). Replaces former localStorage version.
 import { supabase } from '@/integrations/supabase/client';
 import { type HtmlValidationResult } from './htmlValidator';
+import { injectBackend } from './backendInject';
 
 export interface ProjectVersion {
   id: string;
@@ -70,8 +71,9 @@ export const projectStore = {
     const { data: proj, error: e1 } = await supabase.from('projects')
       .insert({ user_id: user.id, name: opts.name, initial_prompt: opts.prompt }).select().single();
     if (e1) throw e1;
+    const finalHtml = injectBackend(opts.html, proj.id);
     const { data: ver, error: e2 } = await supabase.from('project_versions').insert({
-      project_id: proj.id, user_id: user.id, label: 'v1', prompt: opts.prompt, html: opts.html,
+      project_id: proj.id, user_id: user.id, label: 'v1', prompt: opts.prompt, html: finalHtml,
       validation: opts.validation as any,
     }).select().single();
     if (e2) throw e2;
@@ -87,8 +89,9 @@ export const projectStore = {
     if (!current) return null;
     const summary = opts.prompt.length > 32 ? opts.prompt.slice(0, 32) + '…' : opts.prompt;
     const label = `v${current.versions.length + 1} — ${summary}`;
+    const finalHtml = injectBackend(opts.html, projectId);
     const { data: ver, error } = await supabase.from('project_versions').insert({
-      project_id: projectId, user_id: user.id, label, prompt: opts.prompt, html: opts.html,
+      project_id: projectId, user_id: user.id, label, prompt: opts.prompt, html: finalHtml,
       validation: opts.validation as any,
     }).select().single();
     if (error) throw error;

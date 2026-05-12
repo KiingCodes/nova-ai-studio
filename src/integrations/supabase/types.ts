@@ -41,6 +41,41 @@ export type Database = {
         }
         Relationships: []
       }
+      project_submissions: {
+        Row: {
+          created_at: string
+          data: Json
+          form_name: string
+          id: string
+          project_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          form_name?: string
+          id?: string
+          project_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          form_name?: string
+          id?: string
+          project_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_submissions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_versions: {
         Row: {
           created_at: string

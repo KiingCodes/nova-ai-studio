@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Download, History, GitCompare, Plus, FolderOpen, Settings, FileCheck, LogOut } from 'lucide-react';
+import { MessageSquare, Download, History, GitCompare, Plus, FolderOpen, Settings, FileCheck, LogOut, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import PromptInput from '@/components/PromptInput';
 import PreviewPanel from '@/components/PreviewPanel';
@@ -13,6 +13,7 @@ import ProjectsSidebar from '@/components/ProjectsSidebar';
 import { useStreamingGenerator } from '@/lib/useStreamingGenerator';
 import { projectStore, getActiveVersion, type ProjectRecord } from '@/lib/projectStore';
 import { downloadReport } from '@/lib/validationReport';
+import { exportProjectZip } from '@/lib/exportZip';
 import { useAuth } from '@/lib/auth';
 
 const extractName = (prompt: string): string => {
@@ -92,7 +93,7 @@ const Index = () => {
     } catch (e: any) { toast.error(e?.message || 'Edit failed'); }
   }, [project, activeVersion, generate, refreshProjects]);
 
-  const handleDownload = () => {
+  const handleDownloadHtml = () => {
     if (!activeVersion || !project) return;
     const blob = new Blob([activeVersion.html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
@@ -101,6 +102,12 @@ const Index = () => {
     a.download = `${project.name.toLowerCase()}-${activeVersion.label.replace(/\s.*/, '')}.html`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadZip = async () => {
+    if (!activeVersion || !project) return;
+    try { await exportProjectZip(project, activeVersion); toast.success('ZIP downloaded'); }
+    catch (e: any) { toast.error(e?.message || 'Export failed'); }
   };
 
   const handleNewProject = () => {
@@ -171,8 +178,11 @@ const Index = () => {
               <button onClick={() => setChatOpen(!chatOpen)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${chatOpen ? 'gradient-gold text-primary-foreground' : 'bg-secondary hover:bg-muted'}`}>
                 <MessageSquare className="w-3.5 h-3.5" /><span className="hidden sm:inline">Edit</span>
               </button>
-              <button onClick={handleDownload} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-muted text-xs font-medium transition-all">
-                <Download className="w-3.5 h-3.5" /><span className="hidden sm:inline">Export</span>
+              <button onClick={handleDownloadHtml} title="Download single HTML file" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-muted text-xs font-medium transition-all">
+                <Download className="w-3.5 h-3.5" /><span className="hidden sm:inline">HTML</span>
+              </button>
+              <button onClick={handleDownloadZip} title="Download as ZIP (HTML + README + report)" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg gradient-gold text-primary-foreground text-xs font-semibold transition-all hover:opacity-90">
+                <Package className="w-3.5 h-3.5" /><span className="hidden sm:inline">ZIP</span>
               </button>
             </>
           )}
