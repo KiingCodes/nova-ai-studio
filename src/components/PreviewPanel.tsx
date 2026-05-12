@@ -188,16 +188,33 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation }: PreviewPane
 
         <div className="flex items-center gap-1">
           {validation && !streaming && (
-            <div
-              title={validation.warnings.concat(validation.errors).join('\n') || 'Valid HTML'}
-              className={`hidden sm:flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono ${
-                validation.errors.length > 0 ? 'bg-rose-500/10 text-rose-700' :
-                validation.warnings.length > 0 ? 'bg-amber-500/10 text-amber-700' :
-                'bg-emerald-500/10 text-emerald-700'
-              }`}
-            >
-              {validation.errors.length > 0 ? <AlertTriangle className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
-              {validation.score}/100 · {validation.stats.sizeKb}kb
+            <div className="relative">
+              <button
+                onClick={() => setScoreOpen(o => !o)}
+                title="Open score breakdown"
+                className={`hidden sm:flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono transition-all hover:scale-105 ${
+                  validation.errors.length > 0 ? 'bg-rose-500/10 text-rose-700' :
+                  validation.warnings.length > 0 ? 'bg-amber-500/10 text-amber-700' :
+                  'bg-emerald-500/10 text-emerald-700'
+                }`}
+              >
+                <Gauge className="w-3 h-3" />
+                {validation.score}/100 · {validation.stats.sizeKb}kb
+              </button>
+              <AnimatePresence>
+                {scoreOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+                    className="absolute right-0 top-full mt-2 w-72 z-30 rounded-xl border border-border bg-card/98 backdrop-blur-xl shadow-2xl p-3"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold">Quality breakdown</span>
+                      <button onClick={() => setScoreOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
+                    </div>
+                    <ScoreBreakdown validation={validation} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
           <button onClick={reload} title="Reload preview" className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all">
