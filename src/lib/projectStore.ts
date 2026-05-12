@@ -89,8 +89,9 @@ export const projectStore = {
     if (!current) return null;
     const summary = opts.prompt.length > 32 ? opts.prompt.slice(0, 32) + '…' : opts.prompt;
     const label = `v${current.versions.length + 1} — ${summary}`;
+    const finalHtml = injectBackend(opts.html, projectId);
     const { data: ver, error } = await supabase.from('project_versions').insert({
-      project_id: projectId, user_id: user.id, label, prompt: opts.prompt, html: opts.html,
+      project_id: projectId, user_id: user.id, label, prompt: opts.prompt, html: finalHtml,
       validation: opts.validation as any,
     }).select().single();
     if (error) throw error;
