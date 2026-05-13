@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.project-backend]
 verify_jwt = false
+
+[functions.ai-debug]
+verify_jwt = false
+
+[functions.github-import]
+verify_jwt = false
+
+[functions.regen-job]
+verify_jwt = false
