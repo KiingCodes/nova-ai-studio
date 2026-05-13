@@ -35,11 +35,10 @@ export const projectStore = {
     if (id) localStorage.setItem(ACTIVE_KEY, id); else localStorage.removeItem(ACTIVE_KEY);
   },
 
-  async list(): Promise<ProjectRecord[]> {
-    const { data: projects, error } = await supabase
-      .from('projects')
-      .select('*, project_versions(*)')
-      .order('last_opened_at', { ascending: false });
+  async list(workspaceId?: string): Promise<ProjectRecord[]> {
+    let q = supabase.from('projects').select('*, project_versions(*)').order('last_opened_at', { ascending: false });
+    if (workspaceId) q = q.eq('workspace_id', workspaceId);
+    const { data: projects, error } = await q;
     if (error) throw error;
     return (projects ?? []).map((p: any) => ({
       id: p.id,
@@ -65,11 +64,16 @@ export const projectStore = {
     };
   },
 
-  async create(opts: { name: string; prompt: string; html: string; validation?: HtmlValidationResult }): Promise<ProjectRecord> {
+  async create(opts: { name: string; prompt: string; html: string; validation?: HtmlValidationResult; workspaceId?: string }): Promise<ProjectRecord> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not signed in');
+    let wsId = opts.workspaceId;
+    if (!wsId) {
+      const { data: m } = await supabase.from('workspace_members').select('workspace_id').eq('user_id', user.id).limit(1).maybeSingle();
+      wsId = m?.workspace_id;
+    }
     const { data: proj, error: e1 } = await supabase.from('projects')
-      .insert({ user_id: user.id, name: opts.name, initial_prompt: opts.prompt }).select().single();
+      .insert({ user_id: user.id, name: opts.name, initial_prompt: opts.prompt, workspace_id: wsId }).select().single();
     if (e1) throw e1;
     const finalHtml = injectBackend(opts.html, proj.id);
     const { data: ver, error: e2 } = await supabase.from('project_versions').insert({
