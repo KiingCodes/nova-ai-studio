@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Download, History, GitCompare, Plus, FolderOpen, Settings, FileCheck, LogOut, Package } from 'lucide-react';
+import { MessageSquare, Download, History, GitCompare, Plus, FolderOpen, Settings, FileCheck, LogOut, Package, Sparkles, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import PromptInput from '@/components/PromptInput';
 import PreviewPanel from '@/components/PreviewPanel';
@@ -10,8 +10,14 @@ import GenerationProcess from '@/components/GenerationProcess';
 import VersionsPanel from '@/components/VersionsPanel';
 import DiffView from '@/components/DiffView';
 import ProjectsSidebar from '@/components/ProjectsSidebar';
+import ImportRepoDialog from '@/components/ImportRepoDialog';
+import WorkspaceSelector from '@/components/WorkspaceSelector';
+import RegenStatus from '@/components/RegenStatus';
+import AiDebugPanel from '@/components/AiDebugPanel';
 import { useStreamingGenerator } from '@/lib/useStreamingGenerator';
 import { projectStore, getActiveVersion, type ProjectRecord } from '@/lib/projectStore';
+import { workspaceStore } from '@/lib/workspaces';
+import { regenJobs } from '@/lib/regenJobs';
 import { downloadReport } from '@/lib/validationReport';
 import { exportProjectZip } from '@/lib/exportZip';
 import { useAuth } from '@/lib/auth';
@@ -29,23 +35,35 @@ const Index = () => {
 
   const [project, setProject] = useState<ProjectRecord | null>(null);
   const [projects, setProjects] = useState<ProjectRecord[]>([]);
+  const [workspaceId, setWorkspaceId] = useState<string | null>(workspaceStore.getActiveId());
   const [chatOpen, setChatOpen] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
   const [diffOpen, setDiffOpen] = useState(false);
   const [projectsOpen, setProjectsOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
+  const [debugErrors, setDebugErrors] = useState<any[]>([]);
   const [view, setView] = useState<'prompt' | 'editor'>('prompt');
   const [livePrompt, setLivePrompt] = useState('');
 
   const { event, generate } = useStreamingGenerator();
   const isGenerating = ['thinking', 'streaming', 'validating', 'retrying'].includes(event.stage);
 
-  // Auth gate
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
 
-  // Load projects + restore last
+  // Ensure workspace
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const id = workspaceId ?? await workspaceStore.ensureDefault();
+      if (!workspaceId) { workspaceStore.setActiveId(id); setWorkspaceId(id); }
+    })();
+  }, [user, workspaceId]);
+
   const refreshProjects = useCallback(async () => {
+    if (!workspaceId) return;
     try {
-      const list = await projectStore.list();
+      const list = await projectStore.list(workspaceId);
       setProjects(list);
       const id = projectStore.getActiveId();
       if (id) {
@@ -53,9 +71,9 @@ const Index = () => {
         if (rec) { setProject(rec); setView('editor'); }
       }
     } catch (e: any) { console.error(e); }
-  }, []);
+  }, [workspaceId]);
 
-  useEffect(() => { if (user) refreshProjects(); }, [user, refreshProjects]);
+  useEffect(() => { if (user && workspaceId) refreshProjects(); }, [user, workspaceId, refreshProjects]);
 
   const activeVersion = useMemo(() => project ? getActiveVersion(project) : null, [project]);
 
@@ -69,7 +87,7 @@ const Index = () => {
     setChatOpen(false);
     try {
       const { html, validation } = await generate(prompt, undefined);
-      const rec = await projectStore.create({ name: extractName(prompt), prompt, html, validation });
+      const rec = await projectStore.create({ name: extractName(prompt), prompt, html, validation, workspaceId: workspaceId ?? undefined });
       setProject(rec);
       await refreshProjects();
       if (validation.errors.length > 0) toast.warning(`Generated with ${validation.errors.length} issue(s).`);
@@ -79,7 +97,7 @@ const Index = () => {
       toast.error(e?.message || 'Generation failed');
       if (!project) setView('prompt');
     }
-  }, [generate, project, user, nav, refreshProjects]);
+  }, [generate, project, user, nav, refreshProjects, workspaceId]);
 
   const handleChatCommand = useCallback(async (command: string) => {
     if (!project || !activeVersion) return;
@@ -92,6 +110,14 @@ const Index = () => {
       toast.success('Edit applied — new version saved.');
     } catch (e: any) { toast.error(e?.message || 'Edit failed'); }
   }, [project, activeVersion, generate, refreshProjects]);
+
+  const handleBackgroundRegen = useCallback(async (instruction: string) => {
+    if (!project) return;
+    try {
+      await regenJobs.start(project.id, instruction);
+      toast.success('Regeneration queued — runs in background');
+    } catch (e: any) { toast.error(e?.message || 'Failed to queue'); }
+  }, [project]);
 
   const handleDownloadHtml = () => {
     if (!activeVersion || !project) return;
@@ -110,12 +136,7 @@ const Index = () => {
     catch (e: any) { toast.error(e?.message || 'Export failed'); }
   };
 
-  const handleNewProject = () => {
-    projectStore.setActiveId(null);
-    setProject(null);
-    setView('prompt');
-    setProjectsOpen(false);
-  };
+  const handleNewProject = () => { projectStore.setActiveId(null); setProject(null); setView('prompt'); setProjectsOpen(false); };
 
   const handleOpenProject = async (id: string) => {
     const rec = await projectStore.get(id);
@@ -137,12 +158,23 @@ const Index = () => {
     setVersionsOpen(false);
   };
 
+  const handleAiDebug = (errs: any[]) => { setDebugErrors(errs); setDebugOpen(true); };
+
+  const handleApplyAiFix = (fixPrompt: string) => { handleChatCommand(fixPrompt); };
+
+  const handleWorkspaceChange = (id: string) => {
+    workspaceStore.setActiveId(id);
+    setWorkspaceId(id);
+    setProject(null); setView('prompt');
+  };
+
   if (loading || !user) return null;
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-card/60 backdrop-blur-xl z-10">
         <div className="flex items-center gap-1.5">
+          <WorkspaceSelector activeId={workspaceId} onChange={handleWorkspaceChange} />
           <button onClick={() => setProjectsOpen(true)} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
             <FolderOpen className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Projects</span>
@@ -153,7 +185,6 @@ const Index = () => {
               <span className="hidden sm:inline">New</span>
             </button>
           )}
-          <span className="text-xs font-mono text-muted-foreground hidden md:inline">kinging.dev</span>
           {project && view === 'editor' && (
             <span className="text-xs text-muted-foreground/70 hidden md:inline">/ {project.name} <span className="text-primary">{activeVersion?.label}</span></span>
           )}
@@ -170,6 +201,19 @@ const Index = () => {
                   <GitCompare className="w-3.5 h-3.5" /><span className="hidden sm:inline">Diff</span>
                 </button>
               )}
+              <button onClick={() => { setDebugErrors([]); setDebugOpen(true); }} title="AI debug" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-muted text-xs font-medium transition-all">
+                <Sparkles className="w-3.5 h-3.5" /><span className="hidden sm:inline">Debug</span>
+              </button>
+              <button
+                onClick={() => {
+                  const inst = window.prompt('Background regen instruction (runs without blocking the UI):');
+                  if (inst?.trim()) handleBackgroundRegen(inst.trim());
+                }}
+                title="Queue background regeneration"
+                className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-muted text-xs font-medium transition-all"
+              >
+                <Clock className="w-3.5 h-3.5" />
+              </button>
               {activeVersion && (
                 <button onClick={() => downloadReport(project, activeVersion)} title="Export validation report" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-muted text-xs font-medium transition-all">
                   <FileCheck className="w-3.5 h-3.5" />
@@ -181,7 +225,7 @@ const Index = () => {
               <button onClick={handleDownloadHtml} title="Download single HTML file" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-muted text-xs font-medium transition-all">
                 <Download className="w-3.5 h-3.5" /><span className="hidden sm:inline">HTML</span>
               </button>
-              <button onClick={handleDownloadZip} title="Download as ZIP (HTML + README + report)" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg gradient-gold text-primary-foreground text-xs font-semibold transition-all hover:opacity-90">
+              <button onClick={handleDownloadZip} title="Download as ZIP (deploy-ready)" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg gradient-gold text-primary-foreground text-xs font-semibold transition-all hover:opacity-90">
                 <Package className="w-3.5 h-3.5" /><span className="hidden sm:inline">ZIP</span>
               </button>
             </>
@@ -214,6 +258,7 @@ const Index = () => {
                 isGenerating={isGenerating}
                 streaming={event.stage === 'streaming' || event.stage === 'thinking' || event.stage === 'retrying'}
                 validation={displayedValidation}
+                onAiDebug={handleAiDebug}
               />
               <GenerationProcess
                 stage={event.stage} bytes={event.bytes} prompt={livePrompt}
@@ -235,7 +280,22 @@ const Index = () => {
         open={projectsOpen} onClose={() => setProjectsOpen(false)}
         projects={projects} activeId={project?.id ?? null}
         onOpen={handleOpenProject} onDelete={handleDeleteProject} onNew={handleNewProject}
+        onImportRepo={() => { setProjectsOpen(false); setImportOpen(true); }}
       />
+
+      <ImportRepoDialog
+        open={importOpen} onClose={() => setImportOpen(false)}
+        workspaceId={workspaceId ?? undefined}
+        onImported={async (id) => { await refreshProjects(); await handleOpenProject(id); }}
+      />
+
+      <AiDebugPanel
+        open={debugOpen} onClose={() => setDebugOpen(false)}
+        html={displayedHtml} errors={debugErrors} validation={displayedValidation}
+        onApplyFix={handleApplyAiFix}
+      />
+
+      <RegenStatus onJobDone={() => { if (project) projectStore.get(project.id).then(r => r && setProject(r)); }} />
 
       {project && (
         <>
