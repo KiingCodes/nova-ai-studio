@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Github, X, Loader2, Download } from 'lucide-react';
+import { GitFork, X, Loader2, Download } from 'lucide-react';
 import { importGithubRepo } from '@/lib/githubImport';
 import { toast } from 'sonner';
 
@@ -35,7 +35,7 @@ export default function ImportRepoDialog({ open, onClose, workspaceId, onImporte
             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[92vw] max-w-md rounded-2xl glass-panel-strong border border-border p-5"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2"><Github className="w-4 h-4 text-primary" /><h3 className="text-sm font-semibold">Clone from GitHub</h3></div>
+              <div className="flex items-center gap-2"><GitFork className="w-4 h-4 text-primary" /><h3 className="text-sm font-semibold">Clone from GitHub</h3></div>
               <button onClick={onClose} className="p-1 rounded-lg hover:bg-secondary"><X className="w-4 h-4" /></button>
             </div>
             <p className="text-xs text-muted-foreground mb-3">
