@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { FolderOpen, X, Trash2, Plus, FileText } from 'lucide-react';
+import { FolderOpen, X, Trash2, Plus, FileText, GitFork } from 'lucide-react';
 import type { ProjectRecord } from '@/lib/projectStore';
 
 interface Props {
@@ -10,9 +10,10 @@ interface Props {
   onOpen: (id: string) => void;
   onDelete: (id: string) => void;
   onNew: () => void;
+  onImportRepo?: () => void;
 }
 
-export default function ProjectsSidebar({ open, onClose, projects, activeId, onOpen, onDelete, onNew }: Props) {
+export default function ProjectsSidebar({ open, onClose, projects, activeId, onOpen, onDelete, onNew, onImportRepo }: Props) {
   return (
     <AnimatePresence>
       {open && (
@@ -33,9 +34,14 @@ export default function ProjectsSidebar({ open, onClose, projects, activeId, onO
               <button onClick={onClose} className="p-1 rounded-lg hover:bg-secondary"><X className="w-4 h-4" /></button>
             </div>
 
-            <button onClick={onNew} className="m-3 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl gradient-gold text-primary-foreground text-xs font-semibold hover:opacity-90">
-              <Plus className="w-3.5 h-3.5" /> New project
-            </button>
+            <div className="m-3 grid grid-cols-2 gap-2">
+              <button onClick={onNew} className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl gradient-gold text-primary-foreground text-xs font-semibold hover:opacity-90">
+                <Plus className="w-3.5 h-3.5" /> New
+              </button>
+              <button onClick={onImportRepo} className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-secondary hover:bg-muted text-foreground text-xs font-semibold">
+                <GitFork className="w-3.5 h-3.5" /> Clone repo
+              </button>
+            </div>
 
             <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1.5">
               {projects.length === 0 && (
