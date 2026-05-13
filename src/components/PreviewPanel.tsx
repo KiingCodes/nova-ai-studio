@@ -9,6 +9,7 @@ interface PreviewPanelProps {
   isGenerating: boolean;
   streaming?: boolean;
   validation?: HtmlValidationResult;
+  onAiDebug?: (errors: any[]) => void;
 }
 
 type Viewport = 'desktop' | 'tablet' | 'mobile';
@@ -57,7 +58,7 @@ function injectBridge(html: string): string {
   return ERROR_BRIDGE + html;
 }
 
-const PreviewPanel = ({ html, isGenerating, streaming, validation }: PreviewPanelProps) => {
+const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug }: PreviewPanelProps) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const codeRef = useRef<HTMLPreElement>(null);
   const [viewport, setViewport] = useState<Viewport>('desktop');
@@ -296,6 +297,15 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation }: PreviewPane
                   {errorCount > 0 && warnCount > 0 && <span className="text-muted-foreground"> · </span>}
                   {warnCount > 0 && <span className="text-amber-600">{warnCount} warning{warnCount === 1 ? '' : 's'}</span>}
                 </span>
+                {onAiDebug && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onAiDebug(errors); }}
+                    className="px-1.5 py-0.5 rounded gradient-gold text-primary-foreground text-[10px] font-semibold"
+                    title="Debug with AI"
+                  >
+                    ✨ Fix
+                  </button>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
