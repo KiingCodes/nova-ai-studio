@@ -45,6 +45,7 @@ const Index = () => {
   const [importOpen, setImportOpen] = useState(false);
   const [debugOpen, setDebugOpen] = useState(false);
   const [debugErrors, setDebugErrors] = useState<any[]>([]);
+  const [mediaOpen, setMediaOpen] = useState(false);
   const [view, setView] = useState<'prompt' | 'editor'>('prompt');
   const [livePrompt, setLivePrompt] = useState('');
 
