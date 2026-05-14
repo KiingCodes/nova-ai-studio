@@ -241,6 +241,9 @@ const Index = () => {
               </button>
             </>
           )}
+          <button onClick={() => setMediaOpen(true)} title="Media library" className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
+            <ImageIcon className="w-3.5 h-3.5" />
+          </button>
           <button onClick={() => nav('/account')} title="Account settings" className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
             <Settings className="w-3.5 h-3.5" />
           </button>
