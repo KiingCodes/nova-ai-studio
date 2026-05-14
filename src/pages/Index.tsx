@@ -228,6 +228,11 @@ const Index = () => {
               <button onClick={() => setChatOpen(!chatOpen)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${chatOpen ? 'gradient-gold text-primary-foreground' : 'bg-secondary hover:bg-muted'}`}>
                 <MessageSquare className="w-3.5 h-3.5" /><span className="hidden sm:inline">Edit</span>
               </button>
+              {activeVersion && (
+                <button onClick={() => openInVSCode(project, activeVersion)} title="Open in VS Code (downloads ZIP)" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-muted text-xs font-medium transition-all">
+                  <Code2 className="w-3.5 h-3.5" /><span className="hidden md:inline">VS Code</span>
+                </button>
+              )}
               <button onClick={handleDownloadHtml} title="Download single HTML file" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-muted text-xs font-medium transition-all">
                 <Download className="w-3.5 h-3.5" /><span className="hidden sm:inline">HTML</span>
               </button>
