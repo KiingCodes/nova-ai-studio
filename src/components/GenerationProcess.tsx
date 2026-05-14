@@ -39,7 +39,7 @@ export default function GenerationProcess({ stage, bytes, prompt, attempt = 0, m
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 w-[min(640px,calc(100%-2rem))] glass-panel-strong rounded-2xl p-4 shadow-xl"
+          className="absolute bottom-2 sm:bottom-4 left-2 right-2 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-30 sm:w-[min(640px,calc(100%-2rem))] glass-panel-strong rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-xl"
         >
           {/* header */}
           <div className="flex items-center gap-2 mb-3">
