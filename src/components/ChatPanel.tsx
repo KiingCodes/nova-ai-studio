@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, X } from 'lucide-react';
+import { Send, X, Image as ImageIcon } from 'lucide-react';
+import MediaPicker from './MediaPicker';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
