@@ -19,6 +19,7 @@ const ChatPanel = ({ isOpen, onClose, onCommand }: ChatPanelProps) => {
     { role: 'assistant', content: 'I can help you edit your project. Try commands like:\n\n• "Make it more premium"\n• "Add a pricing section"\n• "Change colors to dark theme"\n• "Improve the typography"' },
   ]);
   const [input, setInput] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
