@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, X } from 'lucide-react';
+import { Send, X, Image as ImageIcon } from 'lucide-react';
+import MediaPicker from './MediaPicker';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -18,6 +19,7 @@ const ChatPanel = ({ isOpen, onClose, onCommand }: ChatPanelProps) => {
     { role: 'assistant', content: 'I can help you edit your project. Try commands like:\n\n• "Make it more premium"\n• "Add a pricing section"\n• "Change colors to dark theme"\n• "Improve the typography"' },
   ]);
   const [input, setInput] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -67,13 +69,20 @@ const ChatPanel = ({ isOpen, onClose, onCommand }: ChatPanelProps) => {
           </div>
 
           <div className="p-4 border-t border-border/50">
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              <button
+                onClick={() => setPickerOpen(true)}
+                title="Insert media from your library"
+                className="p-3 rounded-xl bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ImageIcon className="w-4 h-4" />
+              </button>
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Type a command..."
-                className="flex-1 bg-secondary rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                placeholder="Type a command…"
+                className="flex-1 min-w-0 bg-secondary rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/50 transition-all"
               />
               <button
                 onClick={handleSend}
@@ -85,6 +94,11 @@ const ChatPanel = ({ isOpen, onClose, onCommand }: ChatPanelProps) => {
           </div>
         </motion.div>
       )}
+      <MediaPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onPick={(m) => setInput((v) => `${v}${v && !v.endsWith(' ') ? ' ' : ''}Use this media: ${m.url} `)}
+      />
     </AnimatePresence>
   );
 };

@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Download, History, GitCompare, Plus, FolderOpen, Settings, FileCheck, LogOut, Package, Sparkles, Clock } from 'lucide-react';
+import { MessageSquare, Download, History, GitCompare, Plus, FolderOpen, Settings, FileCheck, LogOut, Package, Sparkles, Clock, Image as ImageIcon, Code2 } from 'lucide-react';
 import { toast } from 'sonner';
 import PromptInput from '@/components/PromptInput';
 import PreviewPanel from '@/components/PreviewPanel';
@@ -14,6 +14,8 @@ import ImportRepoDialog from '@/components/ImportRepoDialog';
 import WorkspaceSelector from '@/components/WorkspaceSelector';
 import RegenStatus from '@/components/RegenStatus';
 import AiDebugPanel from '@/components/AiDebugPanel';
+import MediaPicker from '@/components/MediaPicker';
+import { openInVSCode } from '@/lib/openInVscode';
 import { useStreamingGenerator } from '@/lib/useStreamingGenerator';
 import { projectStore, getActiveVersion, type ProjectRecord } from '@/lib/projectStore';
 import { workspaceStore } from '@/lib/workspaces';
@@ -43,6 +45,7 @@ const Index = () => {
   const [importOpen, setImportOpen] = useState(false);
   const [debugOpen, setDebugOpen] = useState(false);
   const [debugErrors, setDebugErrors] = useState<any[]>([]);
+  const [mediaOpen, setMediaOpen] = useState(false);
   const [view, setView] = useState<'prompt' | 'editor'>('prompt');
   const [livePrompt, setLivePrompt] = useState('');
 
@@ -225,6 +228,11 @@ const Index = () => {
               <button onClick={() => setChatOpen(!chatOpen)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${chatOpen ? 'gradient-gold text-primary-foreground' : 'bg-secondary hover:bg-muted'}`}>
                 <MessageSquare className="w-3.5 h-3.5" /><span className="hidden sm:inline">Edit</span>
               </button>
+              {activeVersion && (
+                <button onClick={() => openInVSCode(project, activeVersion)} title="Open in VS Code (downloads ZIP)" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-muted text-xs font-medium transition-all">
+                  <Code2 className="w-3.5 h-3.5" /><span className="hidden md:inline">VS Code</span>
+                </button>
+              )}
               <button onClick={handleDownloadHtml} title="Download single HTML file" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-muted text-xs font-medium transition-all">
                 <Download className="w-3.5 h-3.5" /><span className="hidden sm:inline">HTML</span>
               </button>
@@ -233,6 +241,9 @@ const Index = () => {
               </button>
             </>
           )}
+          <button onClick={() => setMediaOpen(true)} title="Media library" className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
+            <ImageIcon className="w-3.5 h-3.5" />
+          </button>
           <button onClick={() => nav('/account')} title="Account settings" className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
             <Settings className="w-3.5 h-3.5" />
           </button>
@@ -299,6 +310,8 @@ const Index = () => {
       />
 
       <RegenStatus onJobDone={() => { if (project) projectStore.get(project.id).then(r => r && setProject(r)); }} />
+
+      <MediaPicker open={mediaOpen} onClose={() => setMediaOpen(false)} />
 
       {project && (
         <>
