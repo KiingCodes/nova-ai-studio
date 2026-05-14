@@ -7,6 +7,11 @@ const ALLOWED_HOSTS = [
   'cdnjs.cloudflare.com',
   'fonts.googleapis.com',
   'fonts.gstatic.com',
+  'images.unsplash.com',
+  'logo.clearbit.com',
+  'api.dicebear.com',
+  'ui-avatars.com',
+  'i.pravatar.cc',
 ];
 
 const DANGEROUS_INLINE = [
