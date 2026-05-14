@@ -14,6 +14,8 @@ import ImportRepoDialog from '@/components/ImportRepoDialog';
 import WorkspaceSelector from '@/components/WorkspaceSelector';
 import RegenStatus from '@/components/RegenStatus';
 import AiDebugPanel from '@/components/AiDebugPanel';
+import MediaPicker from '@/components/MediaPicker';
+import { openInVSCode } from '@/lib/openInVscode';
 import { useStreamingGenerator } from '@/lib/useStreamingGenerator';
 import { projectStore, getActiveVersion, type ProjectRecord } from '@/lib/projectStore';
 import { workspaceStore } from '@/lib/workspaces';
