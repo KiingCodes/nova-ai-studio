@@ -172,10 +172,13 @@ const Index = () => {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
-      <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-card/60 backdrop-blur-xl z-10">
-        <div className="flex items-center gap-1.5">
+      <header className="flex items-center justify-between gap-2 px-2 sm:px-3 py-2 border-b border-border bg-card/60 backdrop-blur-xl z-10 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          <button onClick={handleNewProject} title="Home / New project" className="flex items-center justify-center w-8 h-8 rounded-lg gradient-gold text-primary-foreground font-bold text-xs shrink-0">
+            K
+          </button>
           <WorkspaceSelector activeId={workspaceId} onChange={handleWorkspaceChange} />
-          <button onClick={() => setProjectsOpen(true)} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
+          <button onClick={() => setProjectsOpen(true)} className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
             <FolderOpen className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Projects</span>
           </button>
@@ -190,7 +193,7 @@ const Index = () => {
           )}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           {project && view === 'editor' && (
             <>
               <button onClick={() => setVersionsOpen(true)} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-muted text-xs font-medium transition-all">

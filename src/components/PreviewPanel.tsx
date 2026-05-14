@@ -246,9 +246,9 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug }: 
           </div>
         ) : html ? (
           tab === 'preview' ? (
-            <div className="w-full h-full p-4 overflow-auto flex items-start justify-center">
+            <div className="w-full h-full p-1.5 sm:p-4 overflow-auto flex items-start justify-center">
               <div
-                className="h-full bg-white rounded-xl overflow-hidden shadow-2xl transition-all duration-300"
+                className="h-full bg-white rounded-md sm:rounded-xl overflow-hidden shadow-2xl transition-all duration-300"
                 style={{ width: viewportWidths[viewport], maxWidth: '100%', minHeight: '100%' }}
               >
                 <iframe

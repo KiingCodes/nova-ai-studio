@@ -40,7 +40,7 @@ const ChatPanel = ({ isOpen, onClose, onCommand }: ChatPanelProps) => {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 400, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="w-[380px] h-full glass-panel-strong flex flex-col border-l border-border/50"
+          className="w-full sm:w-[380px] h-full glass-panel-strong flex flex-col border-l border-border/50"
         >
           <div className="flex items-center justify-between p-4 border-b border-border/50">
             <h3 className="text-sm font-semibold text-foreground">Edit with Chat</h3>
