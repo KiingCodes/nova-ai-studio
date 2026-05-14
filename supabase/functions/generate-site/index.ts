@@ -117,7 +117,7 @@ ${previousHtml}`
       model: gateway("google/gemini-2.5-pro"),
       system: SYSTEM_PROMPT,
       prompt: userMessage,
-      maxOutputTokens: 16000,
+      maxOutputTokens: 24000,
       temperature: 0.85,
     });
 
