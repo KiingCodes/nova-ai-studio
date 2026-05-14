@@ -193,7 +193,7 @@ const Index = () => {
           )}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           {project && view === 'editor' && (
             <>
               <button onClick={() => setVersionsOpen(true)} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-muted text-xs font-medium transition-all">
