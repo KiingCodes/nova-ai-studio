@@ -311,6 +311,8 @@ const Index = () => {
 
       <RegenStatus onJobDone={() => { if (project) projectStore.get(project.id).then(r => r && setProject(r)); }} />
 
+      <MediaPicker open={mediaOpen} onClose={() => setMediaOpen(false)} />
+
       {project && (
         <>
           <VersionsPanel
