@@ -88,13 +88,6 @@ export const projectStore = {
   },
 
   async create(opts: { name: string; prompt: string; html: string; validation?: HtmlValidationResult; workspaceId?: string }): Promise<ProjectRecord> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not signed in');
-    let wsId = opts.workspaceId;
-    if (!wsId) {
-      const { data: m } = await supabase.from('workspace_members').select('workspace_id').eq('user_id', user.id).limit(1).maybeSingle();
-      wsId = m?.workspace_id;
-    }
     const makeLocal = (): ProjectRecord => {
       const now = Date.now();
       const id = `local-${crypto.randomUUID()}`;
@@ -103,6 +96,19 @@ export const projectStore = {
       upsertCache(rec); localStorage.setItem(ACTIVE_KEY, id);
       return rec;
     };
+    let user;
+    try {
+      const res = await supabase.auth.getUser();
+      user = res.data.user;
+    } catch { return makeLocal(); }
+    if (!user) return makeLocal();
+    let wsId = opts.workspaceId;
+    if (!wsId) {
+      try {
+        const { data: m } = await supabase.from('workspace_members').select('workspace_id').eq('user_id', user.id).limit(1).maybeSingle();
+        wsId = m?.workspace_id;
+      } catch { wsId = undefined; }
+    }
     const { data: proj, error: e1 } = await supabase.from('projects')
       .insert({ user_id: user.id, name: opts.name, initial_prompt: opts.prompt, workspace_id: wsId }).select().single();
     if (e1) return makeLocal();
