@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Download, History, GitCompare, Plus, FolderOpen, Settings, FileCheck, LogOut, Package, Sparkles, Clock, Image as ImageIcon, Code2 } from 'lucide-react';
+import { MessageSquare, History, GitCompare, Plus, FolderOpen, Settings, FileCheck, LogOut, Package, Sparkles, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import PromptInput from '@/components/PromptInput';
 import PreviewPanel from '@/components/PreviewPanel';
@@ -14,8 +14,7 @@ import ImportRepoDialog from '@/components/ImportRepoDialog';
 import WorkspaceSelector from '@/components/WorkspaceSelector';
 import RegenStatus from '@/components/RegenStatus';
 import AiDebugPanel from '@/components/AiDebugPanel';
-import MediaPicker from '@/components/MediaPicker';
-import { openInVSCode } from '@/lib/openInVscode';
+import CrownLoader from '@/components/CrownLoader';
 import { useStreamingGenerator } from '@/lib/useStreamingGenerator';
 import { projectStore, getActiveVersion, type ProjectRecord } from '@/lib/projectStore';
 import { workspaceStore } from '@/lib/workspaces';
@@ -45,7 +44,6 @@ const Index = () => {
   const [importOpen, setImportOpen] = useState(false);
   const [debugOpen, setDebugOpen] = useState(false);
   const [debugErrors, setDebugErrors] = useState<any[]>([]);
-  const [mediaOpen, setMediaOpen] = useState(false);
   const [view, setView] = useState<'prompt' | 'editor'>('prompt');
   const [livePrompt, setLivePrompt] = useState('');
 
@@ -58,15 +56,16 @@ const Index = () => {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const id = workspaceId ?? await workspaceStore.ensureDefault();
-      if (!workspaceId) { workspaceStore.setActiveId(id); setWorkspaceId(id); }
+      try {
+        const id = workspaceId ?? await workspaceStore.ensureDefault();
+        if (!workspaceId) { workspaceStore.setActiveId(id); setWorkspaceId(id); }
+      } catch { if (!workspaceId) setWorkspaceId('local-personal'); }
     })();
   }, [user, workspaceId]);
 
   const refreshProjects = useCallback(async () => {
-    if (!workspaceId) return;
     try {
-      const list = await projectStore.list(workspaceId);
+      const list = await projectStore.list(workspaceId === 'local-personal' ? undefined : workspaceId ?? undefined);
       setProjects(list);
       const id = projectStore.getActiveId();
       if (id) {
@@ -76,7 +75,7 @@ const Index = () => {
     } catch (e: any) { console.error(e); }
   }, [workspaceId]);
 
-  useEffect(() => { if (user && workspaceId) refreshProjects(); }, [user, workspaceId, refreshProjects]);
+  useEffect(() => { if (user) refreshProjects(); }, [user, workspaceId, refreshProjects]);
 
   const activeVersion = useMemo(() => project ? getActiveVersion(project) : null, [project]);
 
@@ -122,17 +121,6 @@ const Index = () => {
     } catch (e: any) { toast.error(e?.message || 'Failed to queue'); }
   }, [project]);
 
-  const handleDownloadHtml = () => {
-    if (!activeVersion || !project) return;
-    const blob = new Blob([activeVersion.html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${project.name.toLowerCase()}-${activeVersion.label.replace(/\s.*/, '')}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   const handleDownloadZip = async () => {
     if (!activeVersion || !project) return;
     try { await exportProjectZip(project, activeVersion); toast.success('ZIP downloaded'); }
@@ -171,7 +159,7 @@ const Index = () => {
     setProject(null); setView('prompt');
   };
 
-  if (loading || !user) return null;
+  if (loading || !user) return <CrownLoader fullScreen label="Opening your workspace…" size="lg" />;
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
