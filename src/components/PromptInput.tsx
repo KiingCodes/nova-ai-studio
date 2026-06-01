@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight, Image as ImageIcon } from 'lucide-react';
 import logo from '@/assets/logo.png';
+import MediaPicker from './MediaPicker';
 
 interface PromptInputProps {
   onGenerate: (prompt: string) => void;
@@ -46,6 +47,7 @@ const useTypewriter = (active: boolean) => {
 const PromptInput = ({ onGenerate, isGenerating }: PromptInputProps) => {
   const [prompt, setPrompt] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [mediaOpen, setMediaOpen] = useState(false);
   const placeholder = useTypewriter(!prompt && !isFocused);
 
   const handleSubmit = () => {
@@ -99,6 +101,16 @@ const PromptInput = ({ onGenerate, isGenerating }: PromptInputProps) => {
               )}
             </div>
             <button
+              type="button"
+              onClick={() => setMediaOpen(true)}
+              disabled={isGenerating}
+              title="Add media or logo to the AI prompt"
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-secondary text-secondary-foreground font-semibold text-sm hover:bg-muted transition-all disabled:opacity-40 shrink-0"
+            >
+              <ImageIcon className="w-4 h-4" />
+              <span className="sm:hidden">Media</span>
+            </button>
+            <button
               onClick={handleSubmit}
               disabled={!prompt.trim() || isGenerating}
               className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
@@ -116,6 +128,11 @@ const PromptInput = ({ onGenerate, isGenerating }: PromptInputProps) => {
           </div>
         </div>
       </div>
+      <MediaPicker
+        open={mediaOpen}
+        onClose={() => setMediaOpen(false)}
+        onPick={(m) => setPrompt((v) => `${v}${v && !v.endsWith(' ') ? ' ' : ''}Use this uploaded ${m.type.startsWith('video') ? 'video' : 'image/logo'} in the project: ${m.url} `)}
+      />
     </motion.div>
   );
 };
