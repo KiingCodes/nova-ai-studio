@@ -216,22 +216,11 @@ const Index = () => {
               <button onClick={() => setChatOpen(!chatOpen)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${chatOpen ? 'gradient-gold text-primary-foreground' : 'bg-secondary hover:bg-muted'}`}>
                 <MessageSquare className="w-3.5 h-3.5" /><span className="hidden sm:inline">Edit</span>
               </button>
-              {activeVersion && (
-                <button onClick={() => openInVSCode(project, activeVersion)} title="Open in VS Code (downloads ZIP)" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-muted text-xs font-medium transition-all">
-                  <Code2 className="w-3.5 h-3.5" /><span className="hidden md:inline">VS Code</span>
-                </button>
-              )}
-              <button onClick={handleDownloadHtml} title="Download single HTML file" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-muted text-xs font-medium transition-all">
-                <Download className="w-3.5 h-3.5" /><span className="hidden sm:inline">HTML</span>
-              </button>
-              <button onClick={handleDownloadZip} title="Download as ZIP (deploy-ready)" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg gradient-gold text-primary-foreground text-xs font-semibold transition-all hover:opacity-90">
+              <button onClick={handleDownloadZip} title="Download one ZIP with VS Code workspace, deploy files, and clean source" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg gradient-gold text-primary-foreground text-xs font-semibold transition-all hover:opacity-90">
                 <Package className="w-3.5 h-3.5" /><span className="hidden sm:inline">ZIP</span>
               </button>
             </>
           )}
-          <button onClick={() => setMediaOpen(true)} title="Media library" className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
-            <ImageIcon className="w-3.5 h-3.5" />
-          </button>
           <button onClick={() => nav('/account')} title="Account settings" className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
             <Settings className="w-3.5 h-3.5" />
           </button>
@@ -298,8 +287,6 @@ const Index = () => {
       />
 
       <RegenStatus onJobDone={() => { if (project) projectStore.get(project.id).then(r => r && setProject(r)); }} />
-
-      <MediaPicker open={mediaOpen} onClose={() => setMediaOpen(false)} />
 
       {project && (
         <>
