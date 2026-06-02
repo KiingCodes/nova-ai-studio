@@ -1,5 +1,5 @@
 // Minimal PWA service worker — network-first for navigations, cache-first for static assets.
-const CACHE = 'kinging-v1';
+const CACHE = 'kinging-v2';
 const STATIC = ['/', '/manifest.webmanifest', '/favicon.png'];
 
 self.addEventListener('install', (e) => {
@@ -17,7 +17,7 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
-  if (url.pathname.startsWith('/~oauth') || url.pathname.startsWith('/auth')) return;
+  if (url.pathname.startsWith('/~oauth') || url.pathname.startsWith('/auth') || url.searchParams.has('code')) return;
 
   if (req.mode === 'navigate') {
     e.respondWith((async () => {

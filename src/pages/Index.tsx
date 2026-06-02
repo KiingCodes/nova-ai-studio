@@ -162,8 +162,8 @@ const Index = () => {
   if (loading || !user) return <CrownLoader fullScreen label="Opening your workspace…" size="lg" />;
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
-      <header className="flex items-center justify-between gap-2 px-2 sm:px-3 py-2 border-b border-border bg-card/60 backdrop-blur-xl z-10 overflow-x-auto no-scrollbar">
+    <div className="flex flex-col h-screen overflow-hidden page-brand-bg">
+      <header className="flex items-center justify-between gap-2 px-2 sm:px-3 py-2 border-b border-border bg-card/70 backdrop-blur-xl z-10 overflow-x-auto no-scrollbar">
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
           <button onClick={handleNewProject} title="Home / New project" className="flex items-center justify-center w-8 h-8 rounded-lg gradient-gold text-primary-foreground font-bold text-xs shrink-0">
             K
@@ -234,7 +234,7 @@ const Index = () => {
         <AnimatePresence mode="wait">
           {view === 'prompt' ? (
             <motion.div key="prompt" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="flex-1 flex items-center justify-center p-4 relative overflow-auto">
+              className="flex-1 flex items-center justify-center p-4 relative overflow-auto page-brand-bg">
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full bg-primary/10 blur-3xl animate-pulse-soft" />
                 <div className="absolute bottom-1/4 right-1/4 w-72 h-72 rounded-full bg-accent/10 blur-3xl animate-pulse-soft" />

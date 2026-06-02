@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, ArrowRight, Image as ImageIcon } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import MediaPicker from './MediaPicker';
+import type { UploadedMedia } from '@/lib/mediaUpload';
 
 interface PromptInputProps {
   onGenerate: (prompt: string) => void;
@@ -48,10 +49,16 @@ const PromptInput = ({ onGenerate, isGenerating }: PromptInputProps) => {
   const [prompt, setPrompt] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [mediaOpen, setMediaOpen] = useState(false);
+  const [attachedMedia, setAttachedMedia] = useState<UploadedMedia[]>([]);
   const placeholder = useTypewriter(!prompt && !isFocused);
 
   const handleSubmit = () => {
     if (prompt.trim() && !isGenerating) onGenerate(prompt.trim());
+  };
+
+  const attachMedia = (m: UploadedMedia) => {
+    setAttachedMedia((items) => items.some((item) => item.url === m.url) ? items : [...items, m]);
+    setPrompt((v) => `${v}${v && !v.endsWith(' ') ? ' ' : ''}Use this uploaded ${m.type.startsWith('video') ? 'video' : 'image/logo'} as a real project asset: ${m.url} `);
   };
 
   return (
@@ -126,12 +133,28 @@ const PromptInput = ({ onGenerate, isGenerating }: PromptInputProps) => {
               )}
             </button>
           </div>
+          {attachedMedia.length > 0 && (
+            <div className="flex flex-wrap gap-2 px-2 pb-2 pt-1">
+              {attachedMedia.map((m) => (
+                <button
+                  key={m.url}
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(m.url)}
+                  className="flex max-w-full items-center gap-2 rounded-lg border border-border bg-background/75 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+                  title="Click to copy media URL"
+                >
+                  <ImageIcon className="h-3 w-3 shrink-0 text-primary" />
+                  <span className="truncate max-w-[180px]">{m.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       <MediaPicker
         open={mediaOpen}
         onClose={() => setMediaOpen(false)}
-        onPick={(m) => setPrompt((v) => `${v}${v && !v.endsWith(' ') ? ' ' : ''}Use this uploaded ${m.type.startsWith('video') ? 'video' : 'image/logo'} in the project: ${m.url} `)}
+        onPick={attachMedia}
       />
     </motion.div>
   );
