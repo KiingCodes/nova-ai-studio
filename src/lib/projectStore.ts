@@ -18,6 +18,7 @@ export interface ProjectRecord {
   initialPrompt: string;
   versions: ProjectVersion[];
   activeVersionId: string;
+  workspaceId?: string | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -43,6 +44,40 @@ const mapVersion = (r: any): ProjectVersion => ({
   createdAt: new Date(r.created_at).getTime(), validation: r.validation ?? undefined,
 });
 
+const mapProject = (p: any): ProjectRecord => ({
+  id: p.id,
+  name: p.name,
+  initialPrompt: p.initial_prompt,
+  activeVersionId: p.active_version_id ?? '',
+  workspaceId: p.workspace_id ?? null,
+  createdAt: new Date(p.created_at).getTime(),
+  updatedAt: new Date(p.updated_at).getTime(),
+  versions: (p.project_versions ?? []).map(mapVersion).sort((a: ProjectVersion, b: ProjectVersion) => a.createdAt - b.createdAt),
+});
+
+const ensureWorkspace = async (userId: string, preferredId?: string): Promise<string | undefined> => {
+  if (preferredId && preferredId !== 'local-personal') return preferredId;
+  const { data: memberships, error: membershipError } = await supabase
+    .from('workspace_members')
+    .select('workspace_id')
+    .eq('user_id', userId)
+    .limit(1);
+  if (membershipError) throw membershipError;
+  if (memberships?.[0]?.workspace_id) return memberships[0].workspace_id;
+
+  const { data: ws, error: workspaceError } = await supabase
+    .from('workspaces')
+    .insert({ name: 'Personal', owner_id: userId })
+    .select('id')
+    .single();
+  if (workspaceError) throw workspaceError;
+  const { error: memberError } = await supabase
+    .from('workspace_members')
+    .insert({ workspace_id: ws.id, user_id: userId, role: 'owner' });
+  if (memberError) throw memberError;
+  return ws.id;
+};
+
 export const projectStore = {
   getActiveId(): string | null { return localStorage.getItem(ACTIVE_KEY); },
   setActiveId(id: string | null) {
@@ -52,23 +87,15 @@ export const projectStore = {
   async list(workspaceId?: string): Promise<ProjectRecord[]> {
     try {
       let q = supabase.from('projects').select('*, project_versions(*)').order('last_opened_at', { ascending: false });
-      if (workspaceId) q = q.eq('workspace_id', workspaceId);
+      if (workspaceId) q = q.or(`workspace_id.eq.${workspaceId},workspace_id.is.null`);
       const { data: projects, error } = await q;
       if (error) throw error;
-      const mapped = (projects ?? []).map((p: any) => ({
-      id: p.id,
-      name: p.name,
-      initialPrompt: p.initial_prompt,
-      activeVersionId: p.active_version_id,
-      createdAt: new Date(p.created_at).getTime(),
-      updatedAt: new Date(p.updated_at).getTime(),
-      versions: (p.project_versions ?? []).map(mapVersion).sort((a: ProjectVersion, b: ProjectVersion) => a.createdAt - b.createdAt),
-      }));
+      const mapped = (projects ?? []).map(mapProject);
       mapped.forEach(upsertCache);
-      return mapped.length ? mapped : readCache();
+      return mapped.length ? mapped : readCache().filter(p => !workspaceId || !p.workspaceId || p.workspaceId === workspaceId);
     } catch (error) {
       console.warn('Using cached projects because cloud projects could not load', error);
-      return readCache();
+      return readCache().filter(p => !workspaceId || !p.workspaceId || p.workspaceId === workspaceId);
     }
   },
 
@@ -77,12 +104,7 @@ export const projectStore = {
       .from('projects').select('*, project_versions(*)').eq('id', id).maybeSingle();
     if (error || !p) return readCache().find(x => x.id === id) ?? null;
     await supabase.from('projects').update({ last_opened_at: new Date().toISOString() }).eq('id', id);
-    const rec = {
-      id: p.id, name: p.name, initialPrompt: p.initial_prompt,
-      activeVersionId: p.active_version_id ?? '',
-      createdAt: new Date(p.created_at).getTime(), updatedAt: new Date(p.updated_at).getTime(),
-      versions: ((p as any).project_versions ?? []).map(mapVersion).sort((a: ProjectVersion, b: ProjectVersion) => a.createdAt - b.createdAt),
-    };
+    const rec = mapProject(p);
     upsertCache(rec);
     return rec;
   },
@@ -92,7 +114,7 @@ export const projectStore = {
       const now = Date.now();
       const id = `local-${crypto.randomUUID()}`;
       const version: ProjectVersion = { id: `local-version-${crypto.randomUUID()}`, label: 'v1', prompt: opts.prompt, html: injectBackend(opts.html, id), createdAt: now, validation: opts.validation };
-      const rec: ProjectRecord = { id, name: opts.name, initialPrompt: opts.prompt, versions: [version], activeVersionId: version.id, createdAt: now, updatedAt: now };
+      const rec: ProjectRecord = { id, name: opts.name, initialPrompt: opts.prompt, versions: [version], activeVersionId: version.id, workspaceId: opts.workspaceId ?? null, createdAt: now, updatedAt: now };
       upsertCache(rec); localStorage.setItem(ACTIVE_KEY, id);
       return rec;
     };
@@ -103,21 +125,17 @@ export const projectStore = {
     } catch { return makeLocal(); }
     if (!user) return makeLocal();
     let wsId = opts.workspaceId;
-    if (!wsId) {
-      try {
-        const { data: m } = await supabase.from('workspace_members').select('workspace_id').eq('user_id', user.id).limit(1).maybeSingle();
-        wsId = m?.workspace_id;
-      } catch { wsId = undefined; }
-    }
+    try { wsId = await ensureWorkspace(user.id, wsId); }
+    catch (error) { console.warn('Could not ensure workspace before save', error); wsId = undefined; }
     const { data: proj, error: e1 } = await supabase.from('projects')
       .insert({ user_id: user.id, name: opts.name, initial_prompt: opts.prompt, workspace_id: wsId }).select().single();
-    if (e1) return makeLocal();
+    if (e1) { console.error('Project save failed', e1); return makeLocal(); }
     const finalHtml = injectBackend(opts.html, proj.id);
     const { data: ver, error: e2 } = await supabase.from('project_versions').insert({
       project_id: proj.id, user_id: user.id, label: 'v1', prompt: opts.prompt, html: finalHtml,
       validation: opts.validation as any,
     }).select().single();
-    if (e2) return makeLocal();
+    if (e2) { console.error('Project version save failed', e2); return makeLocal(); }
     await supabase.from('projects').update({ active_version_id: ver.id }).eq('id', proj.id);
     localStorage.setItem(ACTIVE_KEY, proj.id);
     const rec = (await this.get(proj.id))!;
