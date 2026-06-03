@@ -63,7 +63,7 @@ function injectBridge(html: string): string {
   return ERROR_BRIDGE + html;
 }
 
-const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug }: PreviewPanelProps) => {
+const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug, sections = [], stage = 'idle', bytes = 0 }: PreviewPanelProps) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const codeRef = useRef<HTMLPreElement>(null);
   const [viewport, setViewport] = useState<Viewport>('desktop');
