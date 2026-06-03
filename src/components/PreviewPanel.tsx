@@ -2,7 +2,9 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Monitor, Smartphone, Tablet, RefreshCw, ExternalLink, Maximize2, Minimize2, Code2, Eye, AlertTriangle, CheckCircle2, X, Bug, Copy, Gauge } from 'lucide-react';
 import type { HtmlValidationResult } from '@/lib/htmlValidator';
+import type { BuildSection, GenStage } from '@/lib/useStreamingGenerator';
 import ScoreBreakdown from './ScoreBreakdown';
+import PreviewSkeleton from './PreviewSkeleton';
 
 interface PreviewPanelProps {
   html: string;
@@ -10,6 +12,9 @@ interface PreviewPanelProps {
   streaming?: boolean;
   validation?: HtmlValidationResult;
   onAiDebug?: (errors: any[]) => void;
+  sections?: BuildSection[];
+  stage?: GenStage;
+  bytes?: number;
 }
 
 type Viewport = 'desktop' | 'tablet' | 'mobile';
@@ -58,7 +63,7 @@ function injectBridge(html: string): string {
   return ERROR_BRIDGE + html;
 }
 
-const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug }: PreviewPanelProps) => {
+const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug, sections = [], stage = 'idle', bytes = 0 }: PreviewPanelProps) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const codeRef = useRef<HTMLPreElement>(null);
   const [viewport, setViewport] = useState<Viewport>('desktop');
@@ -236,14 +241,7 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug }: 
       {/* Body */}
       <div className="flex-1 flex items-start justify-center overflow-hidden bg-muted/30 relative">
         {isGenerating && !html ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 m-auto">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
-              className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent"
-            />
-            <p className="text-sm text-muted-foreground animate-pulse-soft">Connecting to AI…</p>
-          </div>
+          <PreviewSkeleton sections={sections} stage={stage} bytes={bytes} />
         ) : html ? (
           tab === 'preview' ? (
             <div className="w-full h-full p-1.5 sm:p-4 overflow-auto flex items-start justify-center">
