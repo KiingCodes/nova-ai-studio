@@ -50,15 +50,32 @@ const PromptInput = ({ onGenerate, isGenerating }: PromptInputProps) => {
   const [isFocused, setIsFocused] = useState(false);
   const [mediaOpen, setMediaOpen] = useState(false);
   const [attachedMedia, setAttachedMedia] = useState<UploadedMedia[]>([]);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const placeholder = useTypewriter(!prompt && !isFocused);
 
+  const buildFinalPrompt = (base: string) => {
+    let p = base;
+    if (logoUrl) {
+      p += `\n\nBRAND LOGO (use as the real site logo in nav header, footer, favicon link, and Open Graph image — do NOT replace with a generic one): ${logoUrl}`;
+    }
+    const extras = attachedMedia.filter(m => m.url !== logoUrl);
+    if (extras.length) {
+      p += `\n\nADDITIONAL BRAND ASSETS (use as real imagery — hero, features, gallery):\n` + extras.map(m => `- ${m.url}`).join('\n');
+    }
+    return p;
+  };
+
   const handleSubmit = () => {
-    if (prompt.trim() && !isGenerating) onGenerate(prompt.trim());
+    if (prompt.trim() && !isGenerating) onGenerate(buildFinalPrompt(prompt.trim()));
   };
 
   const attachMedia = (m: UploadedMedia) => {
     setAttachedMedia((items) => items.some((item) => item.url === m.url) ? items : [...items, m]);
-    setPrompt((v) => `${v}${v && !v.endsWith(' ') ? ' ' : ''}Use this uploaded ${m.type.startsWith('video') ? 'video' : 'image/logo'} as a real project asset: ${m.url} `);
+    if (!logoUrl && /logo|brand|crown|icon/i.test(m.name)) setLogoUrl(m.url);
+  };
+  const removeMedia = (url: string) => {
+    setAttachedMedia(items => items.filter(m => m.url !== url));
+    if (logoUrl === url) setLogoUrl(null);
   };
 
   return (
