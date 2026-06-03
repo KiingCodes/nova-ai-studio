@@ -152,18 +152,29 @@ const PromptInput = ({ onGenerate, isGenerating }: PromptInputProps) => {
           </div>
           {attachedMedia.length > 0 && (
             <div className="flex flex-wrap gap-2 px-2 pb-2 pt-1">
-              {attachedMedia.map((m) => (
-                <button
-                  key={m.url}
-                  type="button"
-                  onClick={() => navigator.clipboard.writeText(m.url)}
-                  className="flex max-w-full items-center gap-2 rounded-lg border border-border bg-background/75 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
-                  title="Click to copy media URL"
-                >
-                  <ImageIcon className="h-3 w-3 shrink-0 text-primary" />
-                  <span className="truncate max-w-[180px]">{m.name}</span>
-                </button>
-              ))}
+              {attachedMedia.map((m) => {
+                const isLogo = m.url === logoUrl;
+                return (
+                  <div
+                    key={m.url}
+                    className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] ${isLogo ? 'border-primary bg-primary/10 text-foreground' : 'border-border bg-background/75 text-muted-foreground'}`}
+                  >
+                    {isLogo ? <Crown className="h-3 w-3 shrink-0 text-primary" /> : <ImageIcon className="h-3 w-3 shrink-0 text-primary" />}
+                    <span className="truncate max-w-[140px]">{m.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setLogoUrl(isLogo ? null : m.url)}
+                      title={isLogo ? 'Unset as brand logo' : 'Use as brand logo'}
+                      className="ml-1 rounded px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide hover:bg-primary/20"
+                    >
+                      {isLogo ? 'Logo ✓' : 'Set logo'}
+                    </button>
+                    <button type="button" onClick={() => removeMedia(m.url)} className="hover:text-destructive" title="Remove">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
