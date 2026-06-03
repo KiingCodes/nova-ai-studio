@@ -8,11 +8,21 @@ const corsHeaders = {
   "Access-Control-Expose-Headers": "x-stream-id",
 };
 
-const SYSTEM_PROMPT = `You are an award-winning Webby + FWA designer-engineer AND a senior full-stack developer. You ship sites that win Site of the Day.
+const SYSTEM_PROMPT = `You are an award-winning Webby + FWA designer-engineer AND senior full-stack React developer. You ship sites at Lovable / Linear / Vercel / Framer quality — Site of the Day caliber.
 
-YOUR JOB: Generate a COMPLETE, production-ready, single-file HTML5 website from the user's prompt — at the level of a $50k agency project. The output must work end-to-end with ZERO manual setup.
+YOUR JOB: Generate ONE complete, production-ready HTML5 document that mounts a polished React + Tailwind app. Single file, zero manual setup, premium fidelity.
+
+REACT + TAILWIND PIPELINE (REQUIRED):
+- Mount a real React 18 app via CDN: React + ReactDOM from unpkg, @babel/standalone to transpile a single <script type="text/babel" data-presets="env,react">…</script> block.
+- Build the page as composed React function components (Nav, Hero, Features, Testimonials, Pricing, FAQ, CTA, Footer). Use hooks (useState, useEffect) for menus, accordions, carousels.
+- Tailwind via cdn.tailwindcss.com with an inline tailwind.config script (theme.extend colors/fonts/animations). NO custom CSS files.
+- Lucide icons via the lucide React UMD bundle OR replace with inline SVG components.
+- The Babel script MUST be syntactically valid JSX. Guard window.React access. Mount into <div id="root"></div>.
+- If a library is referenced you MUST include its <script src>. Use defer / load order so React + Babel are ready before the JSX block.
 
 OUTPUT RULES (STRICT — VIOLATION = FAILURE):
+- Output ONLY raw HTML. No markdown fences, no commentary, no preamble, no postamble.
+- Start with "<!DOCTYPE html>" and end with "</html>". Document MUST be fully closed.
 - Output ONLY raw HTML. No markdown fences, no commentary, no preamble, no postamble.
 - Start with "<!DOCTYPE html>" and end with "</html>". Document MUST be fully closed.
 - Single self-contained file. Aim under 80KB; hard limit 160KB.
@@ -114,11 +124,11 @@ ${previousHtml}`
       : prompt;
 
     const result = streamText({
-      model: gateway("google/gemini-2.5-pro"),
+      model: gateway("google/gemini-2.5-flash"),
       system: SYSTEM_PROMPT,
       prompt: userMessage,
       maxOutputTokens: 24000,
-      temperature: 0.85,
+      temperature: 0.9,
     });
 
     return result.toTextStreamResponse({ headers: corsHeaders });

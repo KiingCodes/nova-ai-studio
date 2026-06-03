@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowRight, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, ArrowRight, Image as ImageIcon, Crown, X } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import MediaPicker from './MediaPicker';
 import type { UploadedMedia } from '@/lib/mediaUpload';
@@ -50,15 +50,32 @@ const PromptInput = ({ onGenerate, isGenerating }: PromptInputProps) => {
   const [isFocused, setIsFocused] = useState(false);
   const [mediaOpen, setMediaOpen] = useState(false);
   const [attachedMedia, setAttachedMedia] = useState<UploadedMedia[]>([]);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const placeholder = useTypewriter(!prompt && !isFocused);
 
+  const buildFinalPrompt = (base: string) => {
+    let p = base;
+    if (logoUrl) {
+      p += `\n\nBRAND LOGO (use as the real site logo in nav header, footer, favicon link, and Open Graph image — do NOT replace with a generic one): ${logoUrl}`;
+    }
+    const extras = attachedMedia.filter(m => m.url !== logoUrl);
+    if (extras.length) {
+      p += `\n\nADDITIONAL BRAND ASSETS (use as real imagery — hero, features, gallery):\n` + extras.map(m => `- ${m.url}`).join('\n');
+    }
+    return p;
+  };
+
   const handleSubmit = () => {
-    if (prompt.trim() && !isGenerating) onGenerate(prompt.trim());
+    if (prompt.trim() && !isGenerating) onGenerate(buildFinalPrompt(prompt.trim()));
   };
 
   const attachMedia = (m: UploadedMedia) => {
     setAttachedMedia((items) => items.some((item) => item.url === m.url) ? items : [...items, m]);
-    setPrompt((v) => `${v}${v && !v.endsWith(' ') ? ' ' : ''}Use this uploaded ${m.type.startsWith('video') ? 'video' : 'image/logo'} as a real project asset: ${m.url} `);
+    if (!logoUrl && /logo|brand|crown|icon/i.test(m.name)) setLogoUrl(m.url);
+  };
+  const removeMedia = (url: string) => {
+    setAttachedMedia(items => items.filter(m => m.url !== url));
+    if (logoUrl === url) setLogoUrl(null);
   };
 
   return (
@@ -135,18 +152,29 @@ const PromptInput = ({ onGenerate, isGenerating }: PromptInputProps) => {
           </div>
           {attachedMedia.length > 0 && (
             <div className="flex flex-wrap gap-2 px-2 pb-2 pt-1">
-              {attachedMedia.map((m) => (
-                <button
-                  key={m.url}
-                  type="button"
-                  onClick={() => navigator.clipboard.writeText(m.url)}
-                  className="flex max-w-full items-center gap-2 rounded-lg border border-border bg-background/75 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
-                  title="Click to copy media URL"
-                >
-                  <ImageIcon className="h-3 w-3 shrink-0 text-primary" />
-                  <span className="truncate max-w-[180px]">{m.name}</span>
-                </button>
-              ))}
+              {attachedMedia.map((m) => {
+                const isLogo = m.url === logoUrl;
+                return (
+                  <div
+                    key={m.url}
+                    className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] ${isLogo ? 'border-primary bg-primary/10 text-foreground' : 'border-border bg-background/75 text-muted-foreground'}`}
+                  >
+                    {isLogo ? <Crown className="h-3 w-3 shrink-0 text-primary" /> : <ImageIcon className="h-3 w-3 shrink-0 text-primary" />}
+                    <span className="truncate max-w-[140px]">{m.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setLogoUrl(isLogo ? null : m.url)}
+                      title={isLogo ? 'Unset as brand logo' : 'Use as brand logo'}
+                      className="ml-1 rounded px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide hover:bg-primary/20"
+                    >
+                      {isLogo ? 'Logo ✓' : 'Set logo'}
+                    </button>
+                    <button type="button" onClick={() => removeMedia(m.url)} className="hover:text-destructive" title="Remove">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
