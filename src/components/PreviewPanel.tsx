@@ -2,7 +2,9 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Monitor, Smartphone, Tablet, RefreshCw, ExternalLink, Maximize2, Minimize2, Code2, Eye, AlertTriangle, CheckCircle2, X, Bug, Copy, Gauge } from 'lucide-react';
 import type { HtmlValidationResult } from '@/lib/htmlValidator';
+import type { BuildSection, GenStage } from '@/lib/useStreamingGenerator';
 import ScoreBreakdown from './ScoreBreakdown';
+import PreviewSkeleton from './PreviewSkeleton';
 
 interface PreviewPanelProps {
   html: string;
@@ -10,6 +12,9 @@ interface PreviewPanelProps {
   streaming?: boolean;
   validation?: HtmlValidationResult;
   onAiDebug?: (errors: any[]) => void;
+  sections?: BuildSection[];
+  stage?: GenStage;
+  bytes?: number;
 }
 
 type Viewport = 'desktop' | 'tablet' | 'mobile';
