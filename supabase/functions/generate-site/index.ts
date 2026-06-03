@@ -114,11 +114,11 @@ ${previousHtml}`
       : prompt;
 
     const result = streamText({
-      model: gateway("google/gemini-2.5-pro"),
+      model: gateway("google/gemini-2.5-flash"),
       system: SYSTEM_PROMPT,
       prompt: userMessage,
       maxOutputTokens: 24000,
-      temperature: 0.85,
+      temperature: 0.9,
     });
 
     return result.toTextStreamResponse({ headers: corsHeaders });
