@@ -250,6 +250,9 @@ const Index = () => {
                 streaming={event.stage === 'streaming' || event.stage === 'thinking' || event.stage === 'retrying'}
                 validation={displayedValidation}
                 onAiDebug={handleAiDebug}
+                sections={event.sections}
+                stage={event.stage}
+                bytes={event.bytes}
               />
               <GenerationProcess
                 stage={event.stage} bytes={event.bytes} prompt={livePrompt}
