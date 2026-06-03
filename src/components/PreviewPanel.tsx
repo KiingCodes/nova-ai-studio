@@ -241,14 +241,7 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug, se
       {/* Body */}
       <div className="flex-1 flex items-start justify-center overflow-hidden bg-muted/30 relative">
         {isGenerating && !html ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 m-auto">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
-              className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent"
-            />
-            <p className="text-sm text-muted-foreground animate-pulse-soft">Connecting to AI…</p>
-          </div>
+          <PreviewSkeleton sections={sections} stage={stage} bytes={bytes} />
         ) : html ? (
           tab === 'preview' ? (
             <div className="w-full h-full p-1.5 sm:p-4 overflow-auto flex items-start justify-center">
