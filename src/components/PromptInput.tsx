@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowRight, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, ArrowRight, Image as ImageIcon, Crown, X } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import MediaPicker from './MediaPicker';
 import type { UploadedMedia } from '@/lib/mediaUpload';
