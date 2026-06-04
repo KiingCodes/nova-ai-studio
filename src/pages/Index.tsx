@@ -86,6 +86,7 @@ const Index = () => {
   const handleGenerate = useCallback(async (prompt: string) => {
     if (!user) return nav('/auth');
     setLivePrompt(prompt);
+    setLastPrompt({ prompt, previous: undefined });
     setView('editor');
     setChatOpen(false);
     try {
@@ -97,7 +98,7 @@ const Index = () => {
       else if (validation.warnings.length > 0) toast(`Generated · ${validation.warnings.length} suggestion(s).`);
       else toast.success('Generation complete ✨');
     } catch (e: any) {
-      toast.error(e?.message || 'Generation failed');
+      if (e?.name !== 'AbortError') toast.error(e?.message || 'Generation failed');
       if (!project) setView('prompt');
     }
   }, [generate, project, user, nav, refreshProjects, workspaceId]);
@@ -105,14 +106,24 @@ const Index = () => {
   const handleChatCommand = useCallback(async (command: string) => {
     if (!project || !activeVersion) return;
     setLivePrompt(command);
+    setLastPrompt({ prompt: command, previous: activeVersion.html });
     try {
       const { html, validation } = await generate(command, activeVersion.html);
       const rec = await projectStore.addVersion(project.id, { prompt: command, html, validation });
       if (rec) setProject(rec);
       await refreshProjects();
       toast.success('Edit applied — new version saved.');
-    } catch (e: any) { toast.error(e?.message || 'Edit failed'); }
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') toast.error(e?.message || 'Edit failed');
+    }
   }, [project, activeVersion, generate, refreshProjects]);
+
+  const handleCancelGen = useCallback(() => { cancel(); toast('Generation cancelled'); }, [cancel]);
+  const handleRetryGen = useCallback(() => {
+    if (!lastPrompt) return;
+    if (lastPrompt.previous) handleChatCommand(lastPrompt.prompt);
+    else handleGenerate(lastPrompt.prompt);
+  }, [lastPrompt, handleGenerate, handleChatCommand]);
 
   const handleBackgroundRegen = useCallback(async (instruction: string) => {
     if (!project) return;
