@@ -46,8 +46,9 @@ const Index = () => {
   const [debugErrors, setDebugErrors] = useState<any[]>([]);
   const [view, setView] = useState<'prompt' | 'editor'>('prompt');
   const [livePrompt, setLivePrompt] = useState('');
+  const [lastPrompt, setLastPrompt] = useState<{ prompt: string; previous?: string } | null>(null);
 
-  const { event, generate } = useStreamingGenerator();
+  const { event, generate, cancel } = useStreamingGenerator();
   const isGenerating = ['thinking', 'streaming', 'validating', 'retrying'].includes(event.stage);
 
   useEffect(() => { if (!loading && !user) nav('/auth', { replace: true }); }, [user, loading, nav]);
