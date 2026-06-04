@@ -29,6 +29,7 @@ const FN_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.functions.su
 const SECTION_DEFS: { name: string; matcher: RegExp }[] = [
   { name: 'head',         matcher: /<head[\s>]/i },
   { name: 'meta & seo',   matcher: /<meta[^>]+description/i },
+  { name: 'brand & logo', matcher: /rel=["']icon|logo\.clearbit|<link[^>]+icon/i },
   { name: 'styles',       matcher: /<style[\s>]|tailwindcss/i },
   { name: 'navigation',   matcher: /<nav[\s>]/i },
   { name: 'hero',         matcher: /<(section|header)[^>]*hero|class=["'][^"']*hero/i },
