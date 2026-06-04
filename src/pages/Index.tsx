@@ -270,6 +270,7 @@ const Index = () => {
                 stage={event.stage} bytes={event.bytes} prompt={livePrompt}
                 attempt={event.attempt} maxAttempts={event.maxAttempts}
                 retryReason={event.retryReason} sections={event.sections}
+                onCancel={handleCancelGen} onRetry={handleRetryGen}
               />
               <div className={`${chatOpen ? 'fixed inset-0 z-40 md:relative md:inset-auto' : 'hidden'}`}>
                 <div className="md:hidden absolute inset-0 bg-foreground/20 backdrop-blur-sm" onClick={() => setChatOpen(false)} />
