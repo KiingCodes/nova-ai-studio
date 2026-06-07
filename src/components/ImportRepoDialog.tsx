@@ -58,6 +58,7 @@ export default function ImportRepoDialog({ open, onClose, workspaceId, onImporte
               Tip: works with static sites & landing pages. For app repos, we'll create a wrapper you can convert with chat.
             </p>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>
