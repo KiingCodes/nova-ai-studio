@@ -22,21 +22,23 @@ function ProjectThumb({ html }: { html?: string }) {
     );
   }
   return (
-    <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border/60 bg-card pointer-events-none">
+    <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border/60 bg-card pointer-events-none shadow-lg">
       <iframe
         title="thumbnail"
         sandbox=""
         srcDoc={html}
+        loading="lazy"
         className="absolute top-0 left-0"
         style={{
-          width: '1280px',
-          height: '720px',
-          transform: 'scale(0.235)',
+          width: '1440px',
+          height: '900px',
+          transform: 'scale(0.21)',
           transformOrigin: 'top left',
           border: 0,
+          imageRendering: 'crisp-edges',
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-tr from-background/0 via-transparent to-primary/5" />
+      <div className="absolute inset-0 bg-gradient-to-tr from-background/10 via-transparent to-primary/10 ring-1 ring-inset ring-primary/10" />
     </div>
   );
 }
