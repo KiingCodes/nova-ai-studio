@@ -246,10 +246,10 @@ const Index = () => {
         <AnimatePresence mode="wait">
           {view === 'prompt' ? (
             <motion.div key="prompt" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="flex-1 flex items-center justify-center p-4 relative overflow-auto page-brand-bg">
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full bg-primary/10 blur-3xl animate-pulse-soft" />
-                <div className="absolute bottom-1/4 right-1/4 w-72 h-72 rounded-full bg-accent/10 blur-3xl animate-pulse-soft" />
+              className="flex-1 flex items-center justify-center p-4 relative overflow-auto bg-black">
+              <div className="absolute inset-0 pointer-events-none opacity-60">
+                <div className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full bg-primary/15 blur-3xl animate-pulse-soft" />
+                <div className="absolute bottom-1/4 right-1/4 w-72 h-72 rounded-full bg-accent/15 blur-3xl animate-pulse-soft" />
               </div>
               <PromptInput onGenerate={handleGenerate} isGenerating={isGenerating} />
             </motion.div>
