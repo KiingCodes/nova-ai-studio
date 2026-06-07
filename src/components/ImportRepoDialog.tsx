@@ -30,10 +30,11 @@ export default function ImportRepoDialog({ open, onClose, workspaceId, onImporte
         <>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose} className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm" />
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[94vw] max-w-md max-h-[90vh] overflow-y-auto rounded-2xl glass-panel-strong border border-border p-4 sm:p-5"
-          >
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="pointer-events-auto w-full max-w-md max-h-[85vh] overflow-y-auto rounded-2xl glass-panel-strong border border-border p-4 sm:p-5 shadow-2xl"
+            >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2"><GitFork className="w-4 h-4 text-primary" /><h3 className="text-sm font-semibold">Clone from GitHub</h3></div>
               <button onClick={onClose} className="p-1 rounded-lg hover:bg-secondary"><X className="w-4 h-4" /></button>
@@ -57,6 +58,7 @@ export default function ImportRepoDialog({ open, onClose, workspaceId, onImporte
               Tip: works with static sites & landing pages. For app repos, we'll create a wrapper you can convert with chat.
             </p>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>
