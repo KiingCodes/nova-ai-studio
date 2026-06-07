@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FolderOpen, X, Trash2, Plus, FileText, GitFork, ImageOff } from 'lucide-react';
 import type { ProjectRecord } from '@/lib/projectStore';
@@ -13,7 +14,26 @@ interface Props {
   onImportRepo?: () => void;
 }
 
+const VIEWPORT_W = 1280;
+const VIEWPORT_H = 720;
+
 function ProjectThumb({ html }: { html?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.2);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const el = ref.current;
+    const update = () => {
+      const w = el.clientWidth;
+      if (w > 0) setScale(w / VIEWPORT_W);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   if (!html) {
     return (
       <div className="w-full aspect-video rounded-lg bg-muted/40 flex items-center justify-center text-muted-foreground/40">
@@ -22,23 +42,21 @@ function ProjectThumb({ html }: { html?: string }) {
     );
   }
   return (
-    <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border/60 bg-card pointer-events-none shadow-lg">
+    <div ref={ref} className="relative w-full aspect-video rounded-lg overflow-hidden border border-border/60 bg-card pointer-events-none shadow-lg">
       <iframe
         title="thumbnail"
-        sandbox=""
+        sandbox="allow-same-origin"
         srcDoc={html}
         loading="lazy"
-        className="absolute top-0 left-0"
+        className="absolute top-0 left-0 origin-top-left"
         style={{
-          width: '1440px',
-          height: '900px',
-          transform: 'scale(0.21)',
-          transformOrigin: 'top left',
+          width: `${VIEWPORT_W}px`,
+          height: `${VIEWPORT_H}px`,
+          transform: `scale(${scale})`,
           border: 0,
-          imageRendering: 'crisp-edges',
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-tr from-background/10 via-transparent to-primary/10 ring-1 ring-inset ring-primary/10" />
+      <div className="absolute inset-0 bg-gradient-to-tr from-background/5 via-transparent to-primary/10 ring-1 ring-inset ring-primary/10" />
     </div>
   );
 }
