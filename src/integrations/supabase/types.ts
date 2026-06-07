@@ -14,6 +14,97 @@ export type Database = {
   }
   public: {
     Tables: {
+      brand_assets: {
+        Row: {
+          created_at: string
+          fonts: Json
+          id: string
+          logo_url: string | null
+          notes: string | null
+          palette: Json
+          project_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fonts?: Json
+          id?: string
+          logo_url?: string | null
+          notes?: string | null
+          palette?: Json
+          project_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fonts?: Json
+          id?: string
+          logo_url?: string | null
+          notes?: string | null
+          palette?: Json
+          project_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      github_repos: {
+        Row: {
+          created_at: string
+          default_branch: string
+          html_url: string | null
+          id: string
+          last_pushed_at: string | null
+          owner: string
+          project_id: string
+          repo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          default_branch?: string
+          html_url?: string | null
+          id?: string
+          last_pushed_at?: string | null
+          owner: string
+          project_id: string
+          repo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          default_branch?: string
+          html_url?: string | null
+          id?: string
+          last_pushed_at?: string | null
+          owner?: string
+          project_id?: string
+          repo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "github_repos_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -40,6 +131,45 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      project_rows: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          project_id: string
+          table_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          project_id: string
+          table_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          project_id?: string
+          table_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_rows_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_rows_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "project_tables"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_submissions: {
         Row: {
@@ -69,6 +199,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "project_submissions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_tables: {
+        Row: {
+          columns: Json
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          project_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          columns?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          project_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          columns?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tables_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -210,6 +381,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      style_memory: {
+        Row: {
+          created_at: string
+          id: string
+          preferences: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          preferences?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          preferences?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       workspace_members: {
         Row: {
