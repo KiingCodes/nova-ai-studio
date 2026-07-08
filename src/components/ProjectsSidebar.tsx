@@ -103,15 +103,16 @@ export default function ProjectsSidebar({ open, onClose, projects, activeId, onO
                 const latest = p.versions[p.versions.length - 1]?.html;
                 return (
                   <div key={p.id} className={`group rounded-xl border transition-all overflow-hidden ${
-                    active ? 'border-primary/60 bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary)/0.3)]' : 'border-border bg-card/60 hover:border-border/80 hover:bg-secondary/50'
+                    active ? 'border-primary/60 bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary)/0.3)]' : 'border-zinc-800/80 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-900/70'
                   }`}>
-                    <button onClick={() => onOpen(p.id)} className="w-full text-left p-2">
+                    <button onClick={() => onOpen(p.id)} className="w-full text-left">
                       <ProjectThumb html={latest} />
-                      <div className="flex items-center gap-1.5 mt-2 px-1">
+                      <div className="p-2.5">
+                      <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold truncate flex-1">{p.name}</span>
-                        <span className="text-[10px] text-primary font-mono">v{p.versions.length}</span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md text-amber-500 bg-amber-500/10 border border-amber-500/20">v{p.versions.length}</span>
                       </div>
-                      <p className="text-[10px] text-muted-foreground truncate mt-0.5 px-1">{p.initialPrompt}</p>
+                      <p className="text-[10px] text-muted-foreground truncate mt-1">{p.initialPrompt}</p>
                       <div className="flex items-center justify-between mt-1 px-1">
                         <p className="text-[10px] text-muted-foreground/70 font-mono">
                           {new Date(p.updatedAt).toLocaleDateString()}
