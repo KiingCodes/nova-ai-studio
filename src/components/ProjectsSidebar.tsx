@@ -36,13 +36,13 @@ function ProjectThumb({ html }: { html?: string }) {
 
   if (!html) {
     return (
-      <div className="w-full aspect-video rounded-lg bg-muted/40 flex items-center justify-center text-muted-foreground/40">
+      <div className="w-full h-32 rounded-t-lg bg-zinc-900/60 flex items-center justify-center text-muted-foreground/40">
         <ImageOff className="w-4 h-4" />
       </div>
     );
   }
   return (
-    <div ref={ref} className="relative w-full aspect-video rounded-lg overflow-hidden border border-border/60 bg-card pointer-events-none shadow-lg">
+    <div ref={ref} className="relative w-full h-32 rounded-t-lg overflow-hidden bg-zinc-950 pointer-events-none">
       <iframe
         title="thumbnail"
         sandbox="allow-same-origin"
@@ -56,7 +56,7 @@ function ProjectThumb({ html }: { html?: string }) {
           border: 0,
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-tr from-background/5 via-transparent to-primary/10 ring-1 ring-inset ring-primary/10" />
+      <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-primary/10" />
     </div>
   );
 }
