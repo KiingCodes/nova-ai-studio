@@ -103,41 +103,42 @@ const PromptInput = ({ onGenerate, isGenerating }: PromptInputProps) => {
       </div>
 
       <div className={`relative rounded-2xl transition-all duration-300 ${isFocused ? 'glow-gold' : ''}`}>
-        <div className="glass-panel-strong p-1.5 sm:p-2 rounded-2xl">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <div className="flex-1 relative">
-              <input
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                placeholder=""
-                className="w-full bg-transparent px-3 sm:px-4 py-3 text-foreground outline-none text-sm md:text-base relative z-10"
-                disabled={isGenerating}
-                aria-label="Describe your project"
-              />
-              {!prompt && (
-                <span className="pointer-events-none absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm md:text-base truncate max-w-[calc(100%-1rem)]">
-                  {placeholder}
-                  <span className="inline-block w-[2px] h-4 bg-primary align-middle ml-0.5 animate-pulse" />
-                </span>
-              )}
-            </div>
+        <div className="rounded-2xl border border-zinc-800/60 bg-zinc-950/70 backdrop-blur-md p-2 sm:p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_2px_rgba(0,0,0,0.4)]">
+          <div className="relative">
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
+              rows={3}
+              placeholder=""
+              className="w-full bg-transparent px-3 sm:px-4 py-3 text-foreground outline-none text-sm md:text-base resize-none relative z-10 min-h-[84px]"
+              disabled={isGenerating}
+              aria-label="Describe your project"
+            />
+            {!prompt && (
+              <span className="pointer-events-none absolute left-3 sm:left-4 top-3 text-muted-foreground text-sm md:text-base truncate max-w-[calc(100%-1rem)]">
+                {placeholder}
+                <span className="inline-block w-[2px] h-4 bg-primary align-middle ml-0.5 animate-pulse" />
+              </span>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-2 pt-2 mt-1 border-t border-zinc-800/40">
             <button
               type="button"
               onClick={() => setMediaOpen(true)}
               disabled={isGenerating}
               title="Add media or logo to the AI prompt"
-              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-secondary text-secondary-foreground font-semibold text-sm hover:bg-muted transition-all disabled:opacity-40 shrink-0"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900/60 border border-zinc-800/60 text-secondary-foreground text-xs font-medium hover:bg-zinc-800/60 transition-all disabled:opacity-40"
             >
               <ImageIcon className="w-4 h-4" />
-              <span className="sm:hidden">Media</span>
+              <span>Media</span>
             </button>
             <button
               onClick={handleSubmit}
               disabled={!prompt.trim() || isGenerating}
-              className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              className="flex items-center justify-center gap-2 px-5 py-2 rounded-lg gradient-gold text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isGenerating ? (
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>

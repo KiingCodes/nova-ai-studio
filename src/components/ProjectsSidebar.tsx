@@ -36,13 +36,13 @@ function ProjectThumb({ html }: { html?: string }) {
 
   if (!html) {
     return (
-      <div className="w-full aspect-video rounded-lg bg-muted/40 flex items-center justify-center text-muted-foreground/40">
+      <div className="w-full h-32 rounded-t-lg bg-zinc-900/60 flex items-center justify-center text-muted-foreground/40">
         <ImageOff className="w-4 h-4" />
       </div>
     );
   }
   return (
-    <div ref={ref} className="relative w-full aspect-video rounded-lg overflow-hidden border border-border/60 bg-card pointer-events-none shadow-lg">
+    <div ref={ref} className="relative w-full h-32 rounded-t-lg overflow-hidden bg-zinc-950 pointer-events-none">
       <iframe
         title="thumbnail"
         sandbox="allow-same-origin"
@@ -56,7 +56,7 @@ function ProjectThumb({ html }: { html?: string }) {
           border: 0,
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-tr from-background/5 via-transparent to-primary/10 ring-1 ring-inset ring-primary/10" />
+      <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-primary/10" />
     </div>
   );
 }
@@ -67,13 +67,13 @@ export default function ProjectsSidebar({ open, onClose, projects, activeId, onO
       {open && (
         <>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm" onClick={onClose} />
+            className="fixed inset-0 z-40 bg-black/70 backdrop-blur-md" onClick={onClose} />
           <motion.div
             initial={{ x: -360, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -360, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-            className="fixed left-0 top-0 bottom-0 z-50 w-[88vw] max-w-[360px] glass-panel-strong border-r border-border/50 flex flex-col page-brand-bg"
+            className="fixed left-0 top-0 bottom-0 z-50 w-[88vw] max-w-[360px] bg-zinc-950/80 backdrop-blur-md border-r border-zinc-800/40 flex flex-col"
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/40">
               <div className="flex items-center gap-2">
                 <FolderOpen className="w-4 h-4 text-primary" />
                 <h3 className="text-sm font-semibold">Your projects</h3>
@@ -103,16 +103,17 @@ export default function ProjectsSidebar({ open, onClose, projects, activeId, onO
                 const latest = p.versions[p.versions.length - 1]?.html;
                 return (
                   <div key={p.id} className={`group rounded-xl border transition-all overflow-hidden ${
-                    active ? 'border-primary/60 bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary)/0.3)]' : 'border-border bg-card/60 hover:border-border/80 hover:bg-secondary/50'
+                    active ? 'border-primary/60 bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary)/0.3)]' : 'border-zinc-800/80 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-900/70'
                   }`}>
-                    <button onClick={() => onOpen(p.id)} className="w-full text-left p-2">
+                    <button onClick={() => onOpen(p.id)} className="w-full text-left">
                       <ProjectThumb html={latest} />
-                      <div className="flex items-center gap-1.5 mt-2 px-1">
+                      <div className="p-2.5">
+                      <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold truncate flex-1">{p.name}</span>
-                        <span className="text-[10px] text-primary font-mono">v{p.versions.length}</span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md text-amber-500 bg-amber-500/10 border border-amber-500/20">v{p.versions.length}</span>
                       </div>
-                      <p className="text-[10px] text-muted-foreground truncate mt-0.5 px-1">{p.initialPrompt}</p>
-                      <div className="flex items-center justify-between mt-1 px-1">
+                      <p className="text-[10px] text-muted-foreground truncate mt-1">{p.initialPrompt}</p>
+                      <div className="flex items-center justify-between mt-1.5">
                         <p className="text-[10px] text-muted-foreground/70 font-mono">
                           {new Date(p.updatedAt).toLocaleDateString()}
                         </p>
@@ -125,6 +126,7 @@ export default function ProjectsSidebar({ open, onClose, projects, activeId, onO
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </span>
+                      </div>
                       </div>
                     </button>
                   </div>
