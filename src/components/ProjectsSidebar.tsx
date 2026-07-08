@@ -73,7 +73,7 @@ export default function ProjectsSidebar({ open, onClose, projects, activeId, onO
             transition={{ type: 'spring', damping: 25, stiffness: 220 }}
             className="fixed left-0 top-0 bottom-0 z-50 w-[88vw] max-w-[360px] bg-zinc-950/80 backdrop-blur-md border-r border-zinc-800/40 flex flex-col"
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/40">
               <div className="flex items-center gap-2">
                 <FolderOpen className="w-4 h-4 text-primary" />
                 <h3 className="text-sm font-semibold">Your projects</h3>
