@@ -113,7 +113,7 @@ export default function ProjectsSidebar({ open, onClose, projects, activeId, onO
                         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md text-amber-500 bg-amber-500/10 border border-amber-500/20">v{p.versions.length}</span>
                       </div>
                       <p className="text-[10px] text-muted-foreground truncate mt-1">{p.initialPrompt}</p>
-                      <div className="flex items-center justify-between mt-1 px-1">
+                      <div className="flex items-center justify-between mt-1.5">
                         <p className="text-[10px] text-muted-foreground/70 font-mono">
                           {new Date(p.updatedAt).toLocaleDateString()}
                         </p>
@@ -126,6 +126,7 @@ export default function ProjectsSidebar({ open, onClose, projects, activeId, onO
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </span>
+                      </div>
                       </div>
                     </button>
                   </div>
