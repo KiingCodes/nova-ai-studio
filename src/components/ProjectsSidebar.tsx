@@ -67,11 +67,11 @@ export default function ProjectsSidebar({ open, onClose, projects, activeId, onO
       {open && (
         <>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm" onClick={onClose} />
+            className="fixed inset-0 z-40 bg-black/70 backdrop-blur-md" onClick={onClose} />
           <motion.div
             initial={{ x: -360, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -360, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-            className="fixed left-0 top-0 bottom-0 z-50 w-[88vw] max-w-[360px] glass-panel-strong border-r border-border/50 flex flex-col page-brand-bg"
+            className="fixed left-0 top-0 bottom-0 z-50 w-[88vw] max-w-[360px] bg-zinc-950/80 backdrop-blur-md border-r border-zinc-800/40 flex flex-col"
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
               <div className="flex items-center gap-2">
