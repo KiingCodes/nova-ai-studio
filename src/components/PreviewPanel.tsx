@@ -286,9 +286,7 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug, se
 
       {/* Body */}
       <div className="flex-1 flex items-start justify-center overflow-hidden bg-muted/30 relative">
-        {isGenerating && !html ? (
-          <PreviewSkeleton sections={sections} stage={stage} bytes={bytes} />
-        ) : html ? (
+        {html ? (
           tab === 'preview' ? (
             <div className="w-full h-full p-1.5 sm:p-4 overflow-auto flex items-start justify-center">
               <div
@@ -299,7 +297,6 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug, se
                   ref={iframeRef}
                   className="w-full h-full border-0"
                   title="Preview"
-                  // Hardened sandbox: scripts allowed (needed for Tailwind CDN, Lucide), forms+modals for interactive demos. No same-origin = no parent access.
                   sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms allow-modals"
                   referrerPolicy="no-referrer"
                   loading="lazy"
@@ -315,12 +312,28 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug, se
               {streaming && <span className="inline-block w-2 h-4 align-middle bg-primary animate-pulse ml-0.5" />}
             </pre>
           )
-        ) : (
+        ) : !isGenerating ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center m-auto">
             <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center text-2xl">🎨</div>
             <p className="text-muted-foreground text-sm">Enter a prompt to generate your project</p>
           </div>
-        )}
+        ) : null}
+
+        {/* Premium generation HUD — fades out cleanly the moment the sandbox mounts */}
+        <AnimatePresence>
+          {isGenerating && (
+            <motion.div
+              key="hud"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              className="absolute inset-0 z-10 bg-zinc-950/70 backdrop-blur-md"
+            >
+              <PreviewSkeleton sections={sections} stage={stage} bytes={bytes} html={html} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Runtime error overlay */}
         <AnimatePresence>
