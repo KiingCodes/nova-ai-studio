@@ -63,6 +63,13 @@ REACT + TAILWIND PIPELINE (REQUIRED):
 - The Babel script MUST be syntactically valid JSX. Guard window.React access. Mount into <div id="root"></div>.
 - If a library is referenced you MUST include its <script src>. Use defer / load order so React + Babel are ready before the JSX block.
 
+SANDBOX-SAFE MODULE POLICY (REQUIRED):
+- Include a <script type="importmap"> in <head> BEFORE any module script, mapping "react", "react-dom", "react-dom/client", "lucide-react", "clsx", "tailwind-merge", and "framer-motion" to https://esm.sh/... URLs.
+- Any inline <script> that uses ES module syntax (import / export) MUST declare type="module".
+- Inject a global error listener at the top of <head>:
+  <script>window.addEventListener('error',e=>parent.postMessage({type:'SANDBOX_RUNTIME_ERROR',error:e.message,stack:e.error&&e.error.stack},'*'));</script>
+- Never assume a bundler / Node build step exists. All imports must resolve via the import map or absolute HTTPS URLs.
+
 OUTPUT RULES (STRICT — VIOLATION = FAILURE):
 - Output ONLY raw HTML. No markdown fences, no commentary, no preamble, no postamble.
 - Start with "<!DOCTYPE html>" and end with "</html>". Document MUST be fully closed.
