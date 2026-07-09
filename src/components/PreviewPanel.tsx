@@ -35,32 +35,78 @@ const viewportWidths: Record<Viewport, string> = {
   mobile: '375px',
 };
 
+// Global ESM import map — lets bare-module imports (`import x from 'react'`) resolve
+// natively inside the sandbox against edge-cached CDNs, so generated code never has
+// to hit a Node build step.
+const IMPORT_MAP = `<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react/": "https://esm.sh/react@18.3.1/",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/": "https://esm.sh/react-dom@18.3.1/",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "lucide-react": "https://esm.sh/lucide-react@0.462.0",
+    "clsx": "https://esm.sh/clsx@2.1.1",
+    "tailwind-merge": "https://esm.sh/tailwind-merge@2.5.4",
+    "framer-motion": "https://esm.sh/framer-motion@11.11.9",
+    "zustand": "https://esm.sh/zustand@5.0.1"
+  }
+}
+<\/script>`;
+
 // Script injected into the iframe to forward runtime errors to the parent.
+// Uses BOTH the internal __preview channel (for the error overlay UI) and the
+// public SANDBOX_RUNTIME_ERROR channel (for external telemetry consumers).
 const ERROR_BRIDGE = `<script>
 (function(){
   var post = function(p){ try { parent.postMessage({ __preview: true, ...p }, '*'); } catch(e){} };
+  var telemetry = function(payload){ try { parent.postMessage(payload, '*'); } catch(e){} };
   window.addEventListener('error', function(e){
-    post({ type:'error', message: e.message || String(e.error||'Error'), source: e.filename, line: e.lineno });
+    var msg = e.message || String(e.error||'Error');
+    post({ type:'error', message: msg, source: e.filename, line: e.lineno });
+    telemetry({ type: 'SANDBOX_RUNTIME_ERROR', error: msg, source: e.filename, line: e.lineno, stack: e.error && e.error.stack });
   }, true);
   window.addEventListener('unhandledrejection', function(e){
-    var r = e.reason || {}; post({ type:'unhandled', message: (r.message||String(r)) });
+    var r = e.reason || {};
+    var msg = r.message || String(r);
+    post({ type:'unhandled', message: msg });
+    telemetry({ type: 'SANDBOX_RUNTIME_ERROR', error: msg, stack: r.stack });
   });
   var origErr = console.error;
   console.error = function(){ try { post({ type:'error', message: Array.from(arguments).map(String).join(' ') }); } catch(_){} origErr.apply(console, arguments); };
   var origWarn = console.warn;
   console.warn = function(){ try { post({ type:'warn', message: Array.from(arguments).map(String).join(' ') }); } catch(_){} origWarn.apply(console, arguments); };
+  // Signal successful mount so the parent HUD can fade out only after the doc renders clean.
+  window.addEventListener('load', function(){ telemetry({ __preview:true, type:'ready' }); });
 })();
 <\/script>`;
 
-// Inject the bridge as the first child of <head>, or fall back to prepending.
+// Standardize every inline <script> that uses ES module syntax to type="module",
+// so the browser natively accepts import/export. We leave typed scripts (babel,
+// application/ld+json, importmap) untouched.
+function standardizeScriptTypes(html: string): string {
+  return html.replace(/<script((?:\s+[^>]*)?)>([\s\S]*?)<\/script>/gi, (full, attrs: string, body: string) => {
+    if (/\stype\s*=/i.test(attrs)) return full; // already typed
+    if (!/\b(import|export)\b/.test(body)) return full; // classic script, leave alone
+    return `<script type="module"${attrs}>${body}</script>`;
+  });
+}
+
+// Inject the import map + error bridge as the first children of <head>,
+// then standardize any ESM-using inline <script> blocks.
 function injectBridge(html: string): string {
   if (!html) return html;
+  const preamble = IMPORT_MAP + ERROR_BRIDGE;
   const headOpen = html.match(/<head[^>]*>/i);
+  let out: string;
   if (headOpen && headOpen.index !== undefined) {
     const at = headOpen.index + headOpen[0].length;
-    return html.slice(0, at) + ERROR_BRIDGE + html.slice(at);
+    out = html.slice(0, at) + preamble + html.slice(at);
+  } else {
+    out = preamble + html;
   }
-  return ERROR_BRIDGE + html;
+  return standardizeScriptTypes(out);
 }
 
 const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug, sections = [], stage = 'idle', bytes = 0 }: PreviewPanelProps) => {
