@@ -15,6 +15,7 @@ import WorkspaceSelector from '@/components/WorkspaceSelector';
 import RegenStatus from '@/components/RegenStatus';
 import AiDebugPanel from '@/components/AiDebugPanel';
 import CrownLoader from '@/components/CrownLoader';
+import DeployDialog from '@/components/DeployDialog';
 import { useStreamingGenerator } from '@/lib/useStreamingGenerator';
 import { projectStore, getActiveVersion, type ProjectRecord } from '@/lib/projectStore';
 import { workspaceStore } from '@/lib/workspaces';
