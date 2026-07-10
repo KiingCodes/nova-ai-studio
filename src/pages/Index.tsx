@@ -44,6 +44,7 @@ const Index = () => {
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [debugOpen, setDebugOpen] = useState(false);
+  const [deployOpen, setDeployOpen] = useState(false);
   const [debugErrors, setDebugErrors] = useState<any[]>([]);
   const [view, setView] = useState<'prompt' | 'editor'>('prompt');
   const [livePrompt, setLivePrompt] = useState('');
