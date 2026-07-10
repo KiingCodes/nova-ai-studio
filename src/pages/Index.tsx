@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, History, GitCompare, Plus, FolderOpen, Settings, FileCheck, LogOut, Package, Sparkles, Clock } from 'lucide-react';
+import { MessageSquare, History, GitCompare, Plus, FolderOpen, Settings, FileCheck, LogOut, Package, Sparkles, Clock, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
 import PromptInput from '@/components/PromptInput';
 import PreviewPanel from '@/components/PreviewPanel';
