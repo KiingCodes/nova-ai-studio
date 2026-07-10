@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, History, GitCompare, Plus, FolderOpen, Settings, FileCheck, LogOut, Package, Sparkles, Clock } from 'lucide-react';
+import { MessageSquare, History, GitCompare, Plus, FolderOpen, Settings, FileCheck, LogOut, Package, Sparkles, Clock, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
 import PromptInput from '@/components/PromptInput';
 import PreviewPanel from '@/components/PreviewPanel';
@@ -15,6 +15,7 @@ import WorkspaceSelector from '@/components/WorkspaceSelector';
 import RegenStatus from '@/components/RegenStatus';
 import AiDebugPanel from '@/components/AiDebugPanel';
 import CrownLoader from '@/components/CrownLoader';
+import DeployDialog from '@/components/DeployDialog';
 import { useStreamingGenerator } from '@/lib/useStreamingGenerator';
 import { projectStore, getActiveVersion, type ProjectRecord } from '@/lib/projectStore';
 import { workspaceStore } from '@/lib/workspaces';
@@ -43,6 +44,7 @@ const Index = () => {
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [debugOpen, setDebugOpen] = useState(false);
+  const [deployOpen, setDeployOpen] = useState(false);
   const [debugErrors, setDebugErrors] = useState<any[]>([]);
   const [view, setView] = useState<'prompt' | 'editor'>('prompt');
   const [livePrompt, setLivePrompt] = useState('');
@@ -228,8 +230,11 @@ const Index = () => {
               <button onClick={() => setChatOpen(!chatOpen)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${chatOpen ? 'gradient-gold text-primary-foreground' : 'bg-secondary hover:bg-muted'}`}>
                 <MessageSquare className="w-3.5 h-3.5" /><span className="hidden sm:inline">Edit</span>
               </button>
-              <button onClick={handleDownloadZip} title="Download one ZIP with VS Code workspace, deploy files, and clean source" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg gradient-gold text-primary-foreground text-xs font-semibold transition-all hover:opacity-90">
+              <button onClick={handleDownloadZip} title="Download one ZIP with VS Code workspace, deploy files, and clean source" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-muted text-xs font-medium transition-all">
                 <Package className="w-3.5 h-3.5" /><span className="hidden sm:inline">ZIP</span>
+              </button>
+              <button onClick={() => setDeployOpen(true)} title="Deploy to production" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg gradient-gold text-primary-foreground text-xs font-semibold transition-all hover:opacity-90">
+                <Rocket className="w-3.5 h-3.5" /><span className="hidden sm:inline">Deploy</span>
               </button>
             </>
           )}
@@ -303,6 +308,8 @@ const Index = () => {
       />
 
       <RegenStatus onJobDone={() => { if (project) projectStore.get(project.id).then(r => r && setProject(r)); }} />
+
+      <DeployDialog open={deployOpen} onClose={() => setDeployOpen(false)} projectName={project?.name} />
 
       {project && (
         <>
