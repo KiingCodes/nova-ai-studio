@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Github, Check, Loader2, Copy, ExternalLink, Rocket, Lock, Globe, ShieldCheck } from 'lucide-react';
+import { X, Check, Loader2, Copy, ExternalLink, Rocket, Lock, Globe, ShieldCheck } from 'lucide-react';
+
+const Github = ({ className = '' }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="currentColor">
+    <path d="M12 .5C5.73.5.5 5.73.5 12a11.5 11.5 0 0 0 7.86 10.93c.57.1.78-.25.78-.55v-2.1c-3.2.7-3.88-1.36-3.88-1.36-.52-1.34-1.28-1.7-1.28-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.38.97.1-.76.4-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.72 0-1.26.45-2.3 1.2-3.11-.12-.3-.52-1.48.11-3.08 0 0 .97-.31 3.2 1.19a11.02 11.02 0 0 1 5.82 0c2.22-1.5 3.19-1.19 3.19-1.19.63 1.6.23 2.78.11 3.08.75.81 1.2 1.85 1.2 3.11 0 4.45-2.7 5.42-5.27 5.71.41.36.78 1.07.78 2.16v3.2c0 .31.21.66.79.55A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z" />
+  </svg>
+);
 import * as Switch from '@radix-ui/react-switch';
 import { toast } from 'sonner';
 
