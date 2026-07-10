@@ -230,8 +230,11 @@ const Index = () => {
               <button onClick={() => setChatOpen(!chatOpen)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${chatOpen ? 'gradient-gold text-primary-foreground' : 'bg-secondary hover:bg-muted'}`}>
                 <MessageSquare className="w-3.5 h-3.5" /><span className="hidden sm:inline">Edit</span>
               </button>
-              <button onClick={handleDownloadZip} title="Download one ZIP with VS Code workspace, deploy files, and clean source" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg gradient-gold text-primary-foreground text-xs font-semibold transition-all hover:opacity-90">
+              <button onClick={handleDownloadZip} title="Download one ZIP with VS Code workspace, deploy files, and clean source" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-muted text-xs font-medium transition-all">
                 <Package className="w-3.5 h-3.5" /><span className="hidden sm:inline">ZIP</span>
+              </button>
+              <button onClick={() => setDeployOpen(true)} title="Deploy to production" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg gradient-gold text-primary-foreground text-xs font-semibold transition-all hover:opacity-90">
+                <Rocket className="w-3.5 h-3.5" /><span className="hidden sm:inline">Deploy</span>
               </button>
             </>
           )}
