@@ -309,7 +309,7 @@ const Index = () => {
 
       <RegenStatus onJobDone={() => { if (project) projectStore.get(project.id).then(r => r && setProject(r)); }} />
 
-      <DeployDialog open={deployOpen} onClose={() => setDeployOpen(false)} projectName={project?.name} />
+      <DeployDialog open={deployOpen} onClose={() => setDeployOpen(false)} projectName={project?.name} html={displayedHtml} />
 
       {project && (
         <>

@@ -9,11 +9,14 @@ const Github = ({ className = '' }: { className?: string }) => (
 );
 import * as Switch from '@radix-ui/react-switch';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   projectName?: string;
+  html?: string;
 }
 
 type Phase = 'connect' | 'configure' | 'deploying' | 'done';
@@ -28,52 +31,92 @@ const steps = [
   { key: 'verify', label: 'Verifying production build' },
 ];
 
-export default function DeployDialog({ open, onClose, projectName }: Props) {
+async function invokeDeploy(body: Record<string, unknown>) {
+  const { data, error } = await supabase.functions.invoke('deploy-github', { body });
+  if (error) {
+    const details = error instanceof FunctionsHttpError ? await error.context.text() : error.message;
+    let parsed: any = null;
+    try { parsed = JSON.parse(details); } catch { /* noop */ }
+    throw new Error(parsed?.error || details || 'Deploy failed');
+  }
+  return data as any;
+}
+
+export default function DeployDialog({ open, onClose, projectName, html }: Props) {
   const [phase, setPhase] = useState<Phase>('connect');
-  const [username, setUsername] = useState('your-username');
+  const [username, setUsername] = useState('');
   const [repo, setRepo] = useState(slug(projectName || 'my-project'));
   const [isPrivate, setIsPrivate] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
   const [liveUrl, setLiveUrl] = useState('');
   const [repoUrl, setRepoUrl] = useState('');
+  const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setPhase('connect');
       setStepIdx(0);
+      setError(null);
       setRepo(slug(projectName || 'my-project'));
     }
   }, [open, projectName]);
 
-  useEffect(() => {
-    if (phase !== 'deploying') return;
-    setStepIdx(0);
-    const timers: number[] = [];
-    steps.forEach((_, i) => {
-      timers.push(window.setTimeout(() => setStepIdx(i + 1), (i + 1) * 900));
-    });
-    timers.push(
-      window.setTimeout(() => {
-        const url = `https://${repo}.kinging.app`;
-        const gh = `https://github.com/${username}/${repo}`;
-        setLiveUrl(url);
-        setRepoUrl(gh);
-        setPhase('done');
-      }, steps.length * 900 + 400)
-    );
-    return () => timers.forEach(clearTimeout);
-  }, [phase, repo, username]);
+  const path = useMemo(() => `github.com/${username || 'your-username'}/${slug(repo)}`, [username, repo]);
 
-  const path = useMemo(() => `github.com/${username}/${slug(repo)}`, [username, repo]);
-
-  const handleConnect = () => {
-    // UI-only simulated connection
-    setTimeout(() => {
-      setUsername('kinging-user');
+  const handleConnect = async () => {
+    setConnecting(true);
+    setError(null);
+    try {
+      const me = await invokeDeploy({ action: 'whoami' });
+      setUsername(me.login);
       setPhase('configure');
-      toast.success('GitHub connected');
-    }, 600);
+      toast.success(`GitHub connected as @${me.login}`);
+    } catch (e) {
+      const msg = (e as Error).message;
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setConnecting(false);
+    }
   };
+
+  const handleDeploy = async () => {
+    if (!html || !html.trim()) {
+      toast.error('Nothing to deploy yet — generate a project first.');
+      return;
+    }
+    setPhase('deploying');
+    setStepIdx(0);
+    setError(null);
+    // Cosmetic progression while the real request runs
+    const timers: number[] = [];
+    timers.push(window.setTimeout(() => setStepIdx(1), 800));
+    timers.push(window.setTimeout(() => setStepIdx(2), 1800));
+    timers.push(window.setTimeout(() => setStepIdx(3), 2800));
+    try {
+      const res = await invokeDeploy({
+        action: 'deploy',
+        repoName: slug(repo),
+        isPrivate,
+        html,
+        projectName: projectName || slug(repo),
+      });
+      timers.forEach(clearTimeout);
+      setStepIdx(steps.length);
+      setLiveUrl(res.liveUrl);
+      setRepoUrl(res.repoUrl);
+      setPhase('done');
+      toast.success('Deployed to production 🚀');
+    } catch (e) {
+      timers.forEach(clearTimeout);
+      const msg = (e as Error).message;
+      setError(msg);
+      toast.error(msg);
+      setPhase('configure');
+    }
+  };
+
 
   const copy = async (v: string) => {
     await navigator.clipboard.writeText(v);
@@ -166,15 +209,22 @@ export default function DeployDialog({ open, onClose, projectName }: Props) {
                           </div>
                         </div>
                         <div className="text-xs font-medium text-zinc-500 group-hover:text-amber-400 transition">
-                          Connect →
+                          {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Connect →'}
                         </div>
                       </div>
                     </button>
 
+                    {error && (
+                      <div className="mt-3 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                        {error}
+                      </div>
+                    )}
+
                     <div className="mt-4 flex items-center gap-2 text-[11px] text-zinc-500">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-500/80" />
-                      OAuth scoped only to the repos you create here. Revoke anytime.
+                      Uses the workspace GitHub connection to create a repo and publish via GitHub Pages.
                     </div>
+
                   </motion.div>
                 )}
 
@@ -223,13 +273,20 @@ export default function DeployDialog({ open, onClose, projectName }: Props) {
                       </span>
                     </div>
 
+                    {error && (
+                      <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                        {error}
+                      </div>
+                    )}
+
                     <button
-                      onClick={() => setPhase('deploying')}
-                      disabled={!repo.trim()}
+                      onClick={handleDeploy}
+                      disabled={!repo.trim() || !html}
                       className="w-full py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 text-black text-sm font-semibold hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_8px_24px_-10px_rgba(245,158,11,0.7)]"
                     >
                       Confirm & Deploy Production
                     </button>
+
                   </motion.div>
                 )}
 
