@@ -209,15 +209,22 @@ export default function DeployDialog({ open, onClose, projectName, html }: Props
                           </div>
                         </div>
                         <div className="text-xs font-medium text-zinc-500 group-hover:text-amber-400 transition">
-                          Connect →
+                          {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Connect →'}
                         </div>
                       </div>
                     </button>
 
+                    {error && (
+                      <div className="mt-3 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                        {error}
+                      </div>
+                    )}
+
                     <div className="mt-4 flex items-center gap-2 text-[11px] text-zinc-500">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-500/80" />
-                      OAuth scoped only to the repos you create here. Revoke anytime.
+                      Uses the workspace GitHub connection to create a repo and publish via GitHub Pages.
                     </div>
+
                   </motion.div>
                 )}
 
