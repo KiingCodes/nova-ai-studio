@@ -273,13 +273,20 @@ export default function DeployDialog({ open, onClose, projectName, html }: Props
                       </span>
                     </div>
 
+                    {error && (
+                      <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                        {error}
+                      </div>
+                    )}
+
                     <button
-                      onClick={() => setPhase('deploying')}
-                      disabled={!repo.trim()}
+                      onClick={handleDeploy}
+                      disabled={!repo.trim() || !html}
                       className="w-full py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 text-black text-sm font-semibold hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_8px_24px_-10px_rgba(245,158,11,0.7)]"
                     >
                       Confirm & Deploy Production
                     </button>
+
                   </motion.div>
                 )}
 
