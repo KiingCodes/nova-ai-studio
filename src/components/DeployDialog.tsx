@@ -15,6 +15,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js';
 interface Props {
   open: boolean;
   onClose: () => void;
+  projectId?: string;
   projectName?: string;
   html?: string;
 }
@@ -42,7 +43,7 @@ async function invokeDeploy(body: Record<string, unknown>) {
   return data as any;
 }
 
-export default function DeployDialog({ open, onClose, projectName, html }: Props) {
+export default function DeployDialog({ open, onClose, projectId, projectName, html }: Props) {
   const [phase, setPhase] = useState<Phase>('connect');
   const [username, setUsername] = useState('');
   const [repo, setRepo] = useState(slug(projectName || 'my-project'));
@@ -97,6 +98,7 @@ export default function DeployDialog({ open, onClose, projectName, html }: Props
     try {
       const res = await invokeDeploy({
         action: 'deploy',
+        projectId,
         repoName: slug(repo),
         isPrivate,
         html,
