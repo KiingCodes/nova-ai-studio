@@ -1,5 +1,6 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { compileGeneratedHtml } from './htmlCompiler';
 
 export type GitHubSyncResult =
   | { synced: true; repoUrl?: string; liveUrl?: string; defaultBranch?: string }
@@ -15,7 +16,7 @@ export async function syncLinkedGitHubProject(opts: {
       action: 'sync',
       projectId: opts.projectId,
       projectName: opts.projectName,
-      html: opts.html,
+      html: compileGeneratedHtml(opts.html),
     },
   });
 

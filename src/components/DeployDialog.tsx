@@ -11,6 +11,7 @@ import * as Switch from '@radix-ui/react-switch';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { FunctionsHttpError } from '@supabase/supabase-js';
+import { compileGeneratedHtml } from '@/lib/htmlCompiler';
 
 interface Props {
   open: boolean;
@@ -101,7 +102,7 @@ export default function DeployDialog({ open, onClose, projectId, projectName, ht
         projectId,
         repoName: slug(repo),
         isPrivate,
-        html,
+        html: compileGeneratedHtml(html),
         projectName: projectName || slug(repo),
       });
       timers.forEach(clearTimeout);

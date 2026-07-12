@@ -2,6 +2,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { extractHtmlFromStream, validateHtml, type HtmlValidationResult } from './htmlValidator';
 import { sanitizeHtml } from './sanitize';
+import { compileGeneratedHtml } from './htmlCompiler';
 
 export type GenStage = 'idle' | 'thinking' | 'streaming' | 'validating' | 'retrying' | 'done' | 'error';
 
@@ -155,7 +156,8 @@ export function useStreamingGenerator() {
 
     // Sanitize before storing/displaying
     const sanitized = sanitizeHtml(last.html);
-    last = { html: sanitized.cleaned, validation: validateHtml(sanitized.cleaned) };
+    const compiled = compileGeneratedHtml(sanitized.cleaned);
+    last = { html: compiled, validation: validateHtml(compiled) };
 
     emit({ stage: 'done', html: last.html, bytes: last.html.length, validation: last.validation, sections: detectSections(last.html), attempt }, true);
     return last;
