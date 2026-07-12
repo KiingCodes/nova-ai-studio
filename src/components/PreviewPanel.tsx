@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Monitor, Smartphone, Tablet, RefreshCw, ExternalLink, Maximize2, Minimize2, Code2, Eye, AlertTriangle, CheckCircle2, X, Bug, Copy, Gauge } from 'lucide-react';
 import type { HtmlValidationResult } from '@/lib/htmlValidator';
 import type { BuildSection, GenStage } from '@/lib/useStreamingGenerator';
+import { compileGeneratedHtml } from '@/lib/htmlCompiler';
 import ScoreBreakdown from './ScoreBreakdown';
 import PreviewSkeleton from './PreviewSkeleton';
 
@@ -89,46 +90,8 @@ const ERROR_BRIDGE = `<script>
 })();
 <\/script>`;
 
-// Standardize inline scripts so JSX/ESM execute through the right browser path.
-function standardizeScriptTypes(html: string): string {
-  return html.replace(/<script((?:\s+[^>]*)?)>([\s\S]*?)<\/script>/gi, (full, attrs: string, body: string) => {
-    if (/\stype\s*=/i.test(attrs)) return full; // already typed; normalized separately
-    if (/\b(import|export)\b/.test(body)) return `<script type="module"${attrs}>${body}</script>`;
-    const looksLikeJsx = /ReactDOM\.createRoot[\s\S]*\.render\s*\(\s*</.test(body)
-      || /return\s*\(\s*<[A-Za-z]/.test(body)
-      || /=>\s*\(\s*<[A-Za-z]/.test(body);
-    if (looksLikeJsx) return `<script type="text/babel" data-presets="env,react"${attrs}>${body}</script>`;
-    return full;
-  });
-}
-
-function normalizeBabelScripts(html: string): string {
-  return html.replace(/<script\b([^>]*)>/gi, (tag, attrs: string) => {
-    if (!/\stype\s*=\s*(["'])text\/babel\1/i.test(attrs)) return tag;
-    if (!/\sdata-presets\s*=/i.test(attrs)) {
-      return `<script${attrs} data-presets="env,react">`;
-    }
-    return tag.replace(/data-presets\s*=\s*(["'])(.*?)\1/i, (_m, quote, value) => {
-      const presets = String(value).split(',').map((v) => v.trim()).filter(Boolean);
-      if (!presets.includes('react')) presets.push('react');
-      if (!presets.includes('env')) presets.unshift('env');
-      return `data-presets=${quote}${presets.join(',')}${quote}`;
-    });
-  });
-}
-
-function enforceAnonymousCrossOrigin(html: string): string {
-  return html.replace(/<script\b([^>]*)>/gi, (tag, attrs: string) => {
-    if (/\scrossorigin\s*=/i.test(attrs)) return tag;
-    return `<script${attrs} crossorigin="anonymous">`;
-  }).replace(/<link\b([^>]*(?:\brel\s*=\s*(["'])(?:modulepreload|preload)\2|\bas\s*=\s*(["'])script\3)[^>]*)>/gi, (tag, attrs: string) => {
-    if (/\scrossorigin\s*=/i.test(attrs)) return tag;
-    return `<link${attrs} crossorigin="anonymous">`;
-  });
-}
-
 // Inject the import map + error bridge as the first children of <head>,
-// then standardize any ESM-using inline <script> blocks.
+// then run the global document compiler for CORS + Babel/ESM normalization.
 function injectBridge(html: string): string {
   if (!html) return html;
   const preamble = IMPORT_MAP + ERROR_BRIDGE;
@@ -140,7 +103,7 @@ function injectBridge(html: string): string {
   } else {
     out = preamble + html;
   }
-  return enforceAnonymousCrossOrigin(normalizeBabelScripts(standardizeScriptTypes(out)));
+  return compileGeneratedHtml(out);
 }
 
 const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug, sections = [], stage = 'idle', bytes = 0 }: PreviewPanelProps) => {
