@@ -347,7 +347,14 @@ const Index = () => {
         onApplyFix={handleApplyAiFix}
       />
 
-      <RegenStatus onJobDone={() => { if (project) projectStore.get(project.id).then(r => r && setProject(r)); }} />
+      <RegenStatus onJobDone={() => {
+        if (project) projectStore.get(project.id).then((r) => {
+          if (!r) return;
+          setProject(r);
+          const version = getActiveVersion(r);
+          if (version) syncToGitHub(version.html, r);
+        });
+      }} />
 
       <DeployDialog open={deployOpen} onClose={() => setDeployOpen(false)} projectId={project?.id} projectName={project?.name} html={displayedHtml} />
 
