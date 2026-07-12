@@ -131,7 +131,7 @@ const Index = () => {
     } catch (e: any) {
       if (e?.name !== 'AbortError') toast.error(e?.message || 'Edit failed');
     }
-  }, [project, activeVersion, generate, refreshProjects]);
+  }, [project, activeVersion, generate, refreshProjects, syncToGitHub]);
 
   const handleCancelGen = useCallback(() => { cancel(); toast('Generation cancelled'); }, [cancel]);
   const handleRetryGen = useCallback(() => {
