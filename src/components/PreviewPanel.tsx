@@ -26,6 +26,8 @@ interface RuntimeError {
   message: string;
   source?: string;
   line?: number;
+  col?: number;
+  stack?: string;
   ts: number;
 }
 
@@ -38,7 +40,7 @@ const viewportWidths: Record<Viewport, string> = {
 // Global ESM import map — lets bare-module imports (`import x from 'react'`) resolve
 // natively inside the sandbox against edge-cached CDNs, so generated code never has
 // to hit a Node build step.
-const IMPORT_MAP = `<script type="importmap">
+const IMPORT_MAP = `<script type="importmap" crossorigin="anonymous">
 {
   "imports": {
     "react": "https://esm.sh/react@18.3.1",
@@ -62,34 +64,66 @@ const ERROR_BRIDGE = `<script>
 (function(){
   var post = function(p){ try { parent.postMessage({ __preview: true, ...p }, '*'); } catch(e){} };
   var telemetry = function(payload){ try { parent.postMessage(payload, '*'); } catch(e){} };
+  var formatArg = function(arg){
+    if (arg && arg.stack) return String(arg.stack);
+    if (arg && arg.message) return String(arg.message);
+    try { return typeof arg === 'string' ? arg : JSON.stringify(arg); } catch(_) { return String(arg); }
+  };
   window.addEventListener('error', function(e){
     var msg = e.message || String(e.error||'Error');
-    post({ type:'error', message: msg, source: e.filename, line: e.lineno });
-    telemetry({ type: 'SANDBOX_RUNTIME_ERROR', error: msg, source: e.filename, line: e.lineno, stack: e.error && e.error.stack });
+    post({ type:'error', message: msg, source: e.filename, line: e.lineno, col: e.colno, stack: e.error && e.error.stack });
+    telemetry({ type: 'SANDBOX_RUNTIME_ERROR', error: msg, source: e.filename, line: e.lineno, col: e.colno, stack: e.error && e.error.stack });
   }, true);
   window.addEventListener('unhandledrejection', function(e){
     var r = e.reason || {};
     var msg = r.message || String(r);
-    post({ type:'unhandled', message: msg });
+    post({ type:'unhandled', message: msg, stack: r.stack });
     telemetry({ type: 'SANDBOX_RUNTIME_ERROR', error: msg, stack: r.stack });
   });
   var origErr = console.error;
-  console.error = function(){ try { post({ type:'error', message: Array.from(arguments).map(String).join(' ') }); } catch(_){} origErr.apply(console, arguments); };
+  console.error = function(){ try { post({ type:'error', message: Array.from(arguments).map(formatArg).join(' ') }); } catch(_){} origErr.apply(console, arguments); };
   var origWarn = console.warn;
-  console.warn = function(){ try { post({ type:'warn', message: Array.from(arguments).map(String).join(' ') }); } catch(_){} origWarn.apply(console, arguments); };
+  console.warn = function(){ try { post({ type:'warn', message: Array.from(arguments).map(formatArg).join(' ') }); } catch(_){} origWarn.apply(console, arguments); };
   // Signal successful mount so the parent HUD can fade out only after the doc renders clean.
   window.addEventListener('load', function(){ telemetry({ __preview:true, type:'ready' }); });
 })();
 <\/script>`;
 
-// Standardize every inline <script> that uses ES module syntax to type="module",
-// so the browser natively accepts import/export. We leave typed scripts (babel,
-// application/ld+json, importmap) untouched.
+// Standardize inline scripts so JSX/ESM execute through the right browser path.
 function standardizeScriptTypes(html: string): string {
   return html.replace(/<script((?:\s+[^>]*)?)>([\s\S]*?)<\/script>/gi, (full, attrs: string, body: string) => {
-    if (/\stype\s*=/i.test(attrs)) return full; // already typed
-    if (!/\b(import|export)\b/.test(body)) return full; // classic script, leave alone
-    return `<script type="module"${attrs}>${body}</script>`;
+    if (/\stype\s*=/i.test(attrs)) return full; // already typed; normalized separately
+    if (/\b(import|export)\b/.test(body)) return `<script type="module"${attrs}>${body}</script>`;
+    const looksLikeJsx = /ReactDOM\.createRoot[\s\S]*\.render\s*\(\s*</.test(body)
+      || /return\s*\(\s*<[A-Za-z]/.test(body)
+      || /=>\s*\(\s*<[A-Za-z]/.test(body);
+    if (looksLikeJsx) return `<script type="text/babel" data-presets="env,react"${attrs}>${body}</script>`;
+    return full;
+  });
+}
+
+function normalizeBabelScripts(html: string): string {
+  return html.replace(/<script\b([^>]*)>/gi, (tag, attrs: string) => {
+    if (!/\stype\s*=\s*(["'])text\/babel\1/i.test(attrs)) return tag;
+    if (!/\sdata-presets\s*=/i.test(attrs)) {
+      return `<script${attrs} data-presets="env,react">`;
+    }
+    return tag.replace(/data-presets\s*=\s*(["'])(.*?)\1/i, (_m, quote, value) => {
+      const presets = String(value).split(',').map((v) => v.trim()).filter(Boolean);
+      if (!presets.includes('react')) presets.push('react');
+      if (!presets.includes('env')) presets.unshift('env');
+      return `data-presets=${quote}${presets.join(',')}${quote}`;
+    });
+  });
+}
+
+function enforceAnonymousCrossOrigin(html: string): string {
+  return html.replace(/<script\b([^>]*)>/gi, (tag, attrs: string) => {
+    if (/\scrossorigin\s*=/i.test(attrs)) return tag;
+    return `<script${attrs} crossorigin="anonymous">`;
+  }).replace(/<link\b([^>]*(?:\brel\s*=\s*(["'])(?:modulepreload|preload)\2|\bas\s*=\s*(["'])script\3)[^>]*)>/gi, (tag, attrs: string) => {
+    if (/\scrossorigin\s*=/i.test(attrs)) return tag;
+    return `<link${attrs} crossorigin="anonymous">`;
   });
 }
 
@@ -106,7 +140,7 @@ function injectBridge(html: string): string {
   } else {
     out = preamble + html;
   }
-  return standardizeScriptTypes(out);
+  return enforceAnonymousCrossOrigin(normalizeBabelScripts(standardizeScriptTypes(out)));
 }
 
 const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug, sections = [], stage = 'idle', bytes = 0 }: PreviewPanelProps) => {
@@ -126,12 +160,12 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug, se
     const onMsg = (e: MessageEvent) => {
       const d = e.data;
       if (!d || typeof d !== 'object' || !d.__preview) return;
-      const msg = String(d.message || '').slice(0, 400);
+      const msg = String(d.message || '').slice(0, 4000);
       // Filter known noisy messages from CDN libs we can ignore
       if (/cdn\.tailwindcss\.com.*production/i.test(msg)) return;
       setErrors(prev => [
         ...prev.slice(-19),
-        { id: ++errIdRef.current, type: d.type, message: msg, source: d.source, line: d.line, ts: Date.now() },
+        { id: ++errIdRef.current, type: d.type, message: msg, source: d.source, line: d.line, col: d.col, stack: d.stack, ts: Date.now() },
       ]);
     };
     window.addEventListener('message', onMsg);
@@ -366,7 +400,7 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug, se
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    const txt = errors.map(x => `[${x.type}] ${x.message}${x.source ? ` (${x.source}${x.line ? ':' + x.line : ''})` : ''}`).join('\n');
+                    const txt = errors.map(x => `[${x.type}] ${x.message}${x.source ? ` (${x.source}${x.line ? ':' + x.line : ''}${x.col ? ':' + x.col : ''})` : ''}${x.stack ? `\n${x.stack}` : ''}`).join('\n\n');
                     navigator.clipboard?.writeText(txt);
                   }}
                   className="p-0.5 rounded text-muted-foreground hover:text-foreground"
