@@ -23,6 +23,8 @@ import { regenJobs } from '@/lib/regenJobs';
 import { downloadReport } from '@/lib/validationReport';
 import { exportProjectZip } from '@/lib/exportZip';
 import { useAuth } from '@/lib/auth';
+import { runAiDebug } from '@/lib/aiDebug';
+import { syncLinkedGitHubProject } from '@/lib/githubSync';
 
 const extractName = (prompt: string): string => {
   const m = prompt.match(/(?:called|named)\s+([A-Z][a-zA-Z0-9]+)/);
@@ -85,6 +87,16 @@ const Index = () => {
   const displayedHtml = isGenerating ? event.html : (activeVersion?.html ?? '');
   const displayedValidation = isGenerating ? event.validation : activeVersion?.validation;
 
+  const syncToGitHub = useCallback(async (html: string, targetProject = project) => {
+    if (!targetProject || targetProject.id.startsWith('local-')) return;
+    try {
+      const res = await syncLinkedGitHubProject({ projectId: targetProject.id, projectName: targetProject.name, html });
+      if (res.synced) toast.success('GitHub synced — production rebuild triggered.');
+    } catch (e: any) {
+      toast.warning(`Saved, but GitHub sync failed: ${e?.message || 'unknown error'}`);
+    }
+  }, [project]);
+
   const handleGenerate = useCallback(async (prompt: string) => {
     if (!user) return nav('/auth');
     setLivePrompt(prompt);
@@ -114,11 +126,12 @@ const Index = () => {
       const rec = await projectStore.addVersion(project.id, { prompt: command, html, validation });
       if (rec) setProject(rec);
       await refreshProjects();
+      await syncToGitHub(html, project);
       toast.success('Edit applied — new version saved.');
     } catch (e: any) {
       if (e?.name !== 'AbortError') toast.error(e?.message || 'Edit failed');
     }
-  }, [project, activeVersion, generate, refreshProjects]);
+  }, [project, activeVersion, generate, refreshProjects, syncToGitHub]);
 
   const handleCancelGen = useCallback(() => { cancel(); toast('Generation cancelled'); }, [cancel]);
   const handleRetryGen = useCallback(() => {
@@ -163,9 +176,36 @@ const Index = () => {
     setVersionsOpen(false);
   };
 
-  const handleAiDebug = (errs: any[]) => { setDebugErrors(errs); setDebugOpen(true); };
+  const formatRuntimeErrors = (errs: any[]) => errs.map((x) => {
+    const loc = x.source ? ` (${x.source}${x.line ? `:${x.line}` : ''}${x.col ? `:${x.col}` : ''})` : '';
+    return `[${x.type}] ${x.message}${loc}${x.stack ? `\n${x.stack}` : ''}`;
+  }).join('\n\n');
 
-  const handleApplyAiFix = (fixPrompt: string) => { handleChatCommand(fixPrompt); };
+  const handleAiDebug = useCallback(async (errs: any[]) => {
+    setDebugErrors(errs);
+    if (!project || !activeVersion || errs.length === 0) {
+      setDebugOpen(true);
+      return;
+    }
+
+    const exactRuntimeLog = formatRuntimeErrors(errs);
+    const toastId = toast.loading('Auto-healing sandbox error…');
+    try {
+      const report = await runAiDebug(displayedHtml, errs, displayedValidation);
+      toast.dismiss(toastId);
+      const fixPrompt = `Auto-heal the active generated HTML using a surgical incremental edit. Preserve the existing project identity, layout, copy, forms, and working sections. Fix only the broken code that caused these exact sandbox runtime logs, then return the complete corrected HTML document.\n\nEXACT RUNTIME / CONSOLE LOGS:\n${exactRuntimeLog}\n\nAI DIAGNOSIS:\n${report.summary}\n\nREPAIR PLAN:\n${report.autoFixPrompt}`;
+      await handleChatCommand(fixPrompt);
+    } catch (e: any) {
+      toast.dismiss(toastId);
+      toast.error(e?.message || 'Auto-fix failed');
+      setDebugOpen(true);
+    }
+  }, [project, activeVersion, displayedHtml, displayedValidation, handleChatCommand]);
+
+  const handleApplyAiFix = (fixPrompt: string) => {
+    const exactRuntimeLog = debugErrors.length ? `\n\nEXACT RUNTIME / CONSOLE LOGS:\n${formatRuntimeErrors(debugErrors)}` : '';
+    handleChatCommand(`${fixPrompt}${exactRuntimeLog}`);
+  };
 
   const handleWorkspaceChange = (id: string) => {
     workspaceStore.setActiveId(id);
@@ -307,9 +347,16 @@ const Index = () => {
         onApplyFix={handleApplyAiFix}
       />
 
-      <RegenStatus onJobDone={() => { if (project) projectStore.get(project.id).then(r => r && setProject(r)); }} />
+      <RegenStatus onJobDone={() => {
+        if (project) projectStore.get(project.id).then((r) => {
+          if (!r) return;
+          setProject(r);
+          const version = getActiveVersion(r);
+          if (version) syncToGitHub(version.html, r);
+        });
+      }} />
 
-      <DeployDialog open={deployOpen} onClose={() => setDeployOpen(false)} projectName={project?.name} html={displayedHtml} />
+      <DeployDialog open={deployOpen} onClose={() => setDeployOpen(false)} projectId={project?.id} projectName={project?.name} html={displayedHtml} />
 
       {project && (
         <>

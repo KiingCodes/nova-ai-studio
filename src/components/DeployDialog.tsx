@@ -11,10 +11,12 @@ import * as Switch from '@radix-ui/react-switch';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { FunctionsHttpError } from '@supabase/supabase-js';
+import { compileGeneratedHtml } from '@/lib/htmlCompiler';
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  projectId?: string;
   projectName?: string;
   html?: string;
 }
@@ -42,7 +44,7 @@ async function invokeDeploy(body: Record<string, unknown>) {
   return data as any;
 }
 
-export default function DeployDialog({ open, onClose, projectName, html }: Props) {
+export default function DeployDialog({ open, onClose, projectId, projectName, html }: Props) {
   const [phase, setPhase] = useState<Phase>('connect');
   const [username, setUsername] = useState('');
   const [repo, setRepo] = useState(slug(projectName || 'my-project'));
@@ -97,9 +99,10 @@ export default function DeployDialog({ open, onClose, projectName, html }: Props
     try {
       const res = await invokeDeploy({
         action: 'deploy',
+        projectId,
         repoName: slug(repo),
         isPrivate,
-        html,
+        html: compileGeneratedHtml(html),
         projectName: projectName || slug(repo),
       });
       timers.forEach(clearTimeout);

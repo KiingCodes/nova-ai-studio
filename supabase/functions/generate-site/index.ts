@@ -66,8 +66,11 @@ REACT + TAILWIND PIPELINE (REQUIRED):
 SANDBOX-SAFE MODULE POLICY (REQUIRED):
 - Include a <script type="importmap"> in <head> BEFORE any module script, mapping "react", "react-dom", "react-dom/client", "lucide-react", "clsx", "tailwind-merge", and "framer-motion" to https://esm.sh/... URLs.
 - Any inline <script> that uses ES module syntax (import / export) MUST declare type="module".
+- EVERY <script> tag — external, inline, importmap, module, and Babel — MUST include crossorigin="anonymous" so sandbox runtime errors preserve cross-origin stack traces instead of becoming "Script error. 0".
+- External JavaScript links MUST be emitted like <script type="module" crossorigin="anonymous" src="..."></script> or <script crossorigin="anonymous" src="..."></script>.
+- JSX/modern React inline scripts MUST be emitted exactly as <script type="text/babel" data-presets="env,react" crossorigin="anonymous">…</script>. Do not omit data-presets or crossorigin.
 - Inject a global error listener at the top of <head>:
-  <script>window.addEventListener('error',e=>parent.postMessage({type:'SANDBOX_RUNTIME_ERROR',error:e.message,stack:e.error&&e.error.stack},'*'));</script>
+  <script crossorigin="anonymous">window.addEventListener('error',e=>parent.postMessage({type:'SANDBOX_RUNTIME_ERROR',error:e.message,source:e.filename,line:e.lineno,col:e.colno,stack:e.error&&e.error.stack},'*'));</script>
 - Never assume a bundler / Node build step exists. All imports must resolve via the import map or absolute HTTPS URLs.
 
 OUTPUT RULES (STRICT — VIOLATION = FAILURE):
@@ -77,6 +80,7 @@ OUTPUT RULES (STRICT — VIOLATION = FAILURE):
 - Start with "<!DOCTYPE html>" and end with "</html>". Document MUST be fully closed.
 - Single self-contained file. Aim under 80KB; hard limit 160KB.
 - All <script> blocks MUST be syntactically valid. Wrap DOM access in DOMContentLoaded.
+- All <script> blocks MUST include crossorigin="anonymous".
 - ONLY load external assets from HTTPS CDNs: cdn.tailwindcss.com, unpkg.com, cdn.jsdelivr.net, cdnjs.cloudflare.com, fonts.googleapis.com, fonts.gstatic.com, images.unsplash.com, api.dicebear.com, logo.clearbit.com, ui-avatars.com.
 
 DEPENDENCY MANAGEMENT (NO MANUAL INSTALL):

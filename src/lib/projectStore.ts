@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { type HtmlValidationResult } from './htmlValidator';
 import { injectBackend } from './backendInject';
+import { compileGeneratedHtml } from './htmlCompiler';
 
 export interface ProjectVersion {
   id: string;
@@ -113,7 +114,7 @@ export const projectStore = {
     const makeLocal = (): ProjectRecord => {
       const now = Date.now();
       const id = `local-${crypto.randomUUID()}`;
-      const version: ProjectVersion = { id: `local-version-${crypto.randomUUID()}`, label: 'v1', prompt: opts.prompt, html: injectBackend(opts.html, id), createdAt: now, validation: opts.validation };
+      const version: ProjectVersion = { id: `local-version-${crypto.randomUUID()}`, label: 'v1', prompt: opts.prompt, html: injectBackend(compileGeneratedHtml(opts.html), id), createdAt: now, validation: opts.validation };
       const rec: ProjectRecord = { id, name: opts.name, initialPrompt: opts.prompt, versions: [version], activeVersionId: version.id, workspaceId: opts.workspaceId ?? null, createdAt: now, updatedAt: now };
       upsertCache(rec); localStorage.setItem(ACTIVE_KEY, id);
       return rec;
@@ -130,7 +131,7 @@ export const projectStore = {
     const { data: proj, error: e1 } = await supabase.from('projects')
       .insert({ user_id: user.id, name: opts.name, initial_prompt: opts.prompt, workspace_id: wsId }).select().single();
     if (e1) { console.error('Project save failed', e1); return makeLocal(); }
-    const finalHtml = injectBackend(opts.html, proj.id);
+    const finalHtml = injectBackend(compileGeneratedHtml(opts.html), proj.id);
     const { data: ver, error: e2 } = await supabase.from('project_versions').insert({
       project_id: proj.id, user_id: user.id, label: 'v1', prompt: opts.prompt, html: finalHtml,
       validation: opts.validation as any,
@@ -150,7 +151,7 @@ export const projectStore = {
     if (!current) return null;
     const summary = opts.prompt.length > 32 ? opts.prompt.slice(0, 32) + '…' : opts.prompt;
     const label = `v${current.versions.length + 1} — ${summary}`;
-    const finalHtml = injectBackend(opts.html, projectId);
+    const finalHtml = injectBackend(compileGeneratedHtml(opts.html), projectId);
     const localVersion: ProjectVersion = { id: `local-version-${crypto.randomUUID()}`, label, prompt: opts.prompt, html: finalHtml, createdAt: Date.now(), validation: opts.validation };
     const localRec = { ...current, versions: [...current.versions, localVersion], activeVersionId: localVersion.id, updatedAt: Date.now() };
     const { data: ver, error } = await supabase.from('project_versions').insert({
