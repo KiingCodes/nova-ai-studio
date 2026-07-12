@@ -160,7 +160,9 @@ const PreviewPanel = ({ html, isGenerating, streaming, validation, onAiDebug, se
     const onMsg = (e: MessageEvent) => {
       const d = e.data;
       if (!d || typeof d !== 'object' || !d.__preview) return;
+      if (d.type === 'ready') return;
       const msg = String(d.message || '').slice(0, 4000);
+      if (!msg) return;
       // Filter known noisy messages from CDN libs we can ignore
       if (/cdn\.tailwindcss\.com.*production/i.test(msg)) return;
       setErrors(prev => [
