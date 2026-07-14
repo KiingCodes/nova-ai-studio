@@ -1,17 +1,71 @@
+import * as Babel from '@babel/standalone';
+
 const hasAttr = (attrs: string, name: string) => new RegExp(`\\s${name}\\s*=`, 'i').test(attrs);
+const getAttr = (attrs: string, name: string) => attrs.match(new RegExp(`\\s${name}\\s*=\\s*(["'])(.*?)\\1`, 'i'))?.[2];
+const stripAttrs = (attrs: string, names: string[]) => names.reduce(
+  (out, name) => out.replace(new RegExp(`\\s${name}(?:\\s*=\\s*(?:["'][^"']*["']|[^\\s>]+))?`, 'gi'), ''),
+  attrs,
+);
+
+const hasEsmSyntax = (body: string) => /(^|\n)\s*(import\s+[\s\S]*?(?:from\s+)?['"]|export\s+(default|const|let|var|function|class|\{))/m.test(body);
+const looksLikeJsx = (body: string) => /ReactDOM\.createRoot[\s\S]*\.render\s*\(\s*</.test(body)
+  || /return\s*\(\s*<[A-Za-z]/.test(body)
+  || /=>\s*\(\s*<[A-Za-z]/.test(body)
+  || /=\s*\(\s*<[A-Za-z]/.test(body)
+  || /<[A-Z][A-Za-z0-9]*(?:\s|>|\/)/.test(body);
+
+function removeBabelStandaloneScripts(html: string): string {
+  return html.replace(
+    /<script\b[^>]*\bsrc\s*=\s*["'][^"']*(?:@babel\/standalone|babel\.standalone|babel\.min\.js)[^"']*["'][^>]*>\s*<\/script>/gi,
+    '',
+  );
+}
+
+function precompileInlineReactScripts(html: string): string {
+  return html.replace(/<script\b((?:\s+[^>]*)?)>([\s\S]*?)<\/script>/gi, (full, attrs: string, body: string) => {
+    if (hasAttr(attrs, 'src')) return full;
+
+    const type = (getAttr(attrs, 'type') || '').trim().toLowerCase();
+    if (type === 'importmap' || type === 'application/json' || type === 'application/ld+json') return full;
+
+    const isBabel = type === 'text/babel' || type === 'text/jsx';
+    const hasEsm = hasEsmSyntax(body);
+    const hasJsx = looksLikeJsx(body);
+    const requestedModule = (getAttr(attrs, 'data-type') || '').toLowerCase() === 'module' || type === 'module' || hasEsm;
+
+    if (!isBabel && !hasJsx) return full;
+
+    try {
+      const transformed = Babel.transform(body, {
+        filename: 'generated-preview.jsx',
+        sourceType: requestedModule ? 'module' : 'script',
+        presets: [
+          ['env', { modules: false, targets: { esmodules: true } }],
+          ['react', { runtime: 'classic' }],
+        ],
+      }).code || body;
+      const cleanedAttrs = stripAttrs(attrs, ['type', 'data-presets', 'data-type', 'data-plugins']);
+      const typeAttr = requestedModule ? ' type="module"' : '';
+      return `<script${typeAttr}${cleanedAttrs}>${transformed}</script>`;
+    } catch (error) {
+      // If precompilation fails, keep Babel's runtime path but force native module
+      // emission for imports. This avoids the browser's classic-script
+      // appendChild failure: "Cannot use import statement outside a module".
+      if (isBabel && requestedModule && !hasAttr(attrs, 'data-type')) {
+        return `<script${attrs} data-type="module">${body}</script>`;
+      }
+      return full;
+    }
+  });
+}
 
 function standardizeScriptTypes(html: string): string {
   return html.replace(/<script((?:\s+[^>]*)?)>([\s\S]*?)<\/script>/gi, (full, attrs: string, body: string) => {
     if (hasAttr(attrs, 'type')) return full;
     // Detect static ESM syntax at statement position (avoid matching dynamic import() or the word in strings)
-    const hasEsm = /(^|\n)\s*(import\s+[\s\S]*?from\s+['"]|import\s*['"]|export\s+(default|const|let|var|function|class|\{))/m.test(body);
+    const hasEsm = hasEsmSyntax(body);
     if (hasEsm) return `<script type="module"${attrs}>${body}</script>`;
 
-    const looksLikeJsx = /ReactDOM\.createRoot[\s\S]*\.render\s*\(\s*</.test(body)
-      || /return\s*\(\s*<[A-Za-z]/.test(body)
-      || /=>\s*\(\s*<[A-Za-z]/.test(body);
-
-    if (looksLikeJsx) return `<script type="text/babel" data-presets="env,react"${attrs}>${body}</script>`;
     return full;
   });
 }
@@ -74,7 +128,11 @@ export function compileGeneratedHtml(html: string): string {
   return enforceAnonymousCrossOrigin(
     normalizeBabelScripts(
       standardizeScriptTypes(
-        fixTailwindConfigOrder(html)
+        removeBabelStandaloneScripts(
+          precompileInlineReactScripts(
+            fixTailwindConfigOrder(html)
+          )
+        )
       )
     )
   );
